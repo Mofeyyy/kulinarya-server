@@ -6,7 +6,7 @@ const app = express();
 require("dotenv").config();
 
 // Connect to Database
-const connectDB = require("./config/connectDB");
+const connectDB = require("./config/database");
 connectDB().then(() => {
   // If database is connected start listening to port 4000
   const PORT = process.env.PORT || 4000;
