@@ -7,30 +7,34 @@ const PostViewSchema = new Schema(
   {
     fromPost: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "RecipePost", // referencing the RecipePost collection
+      ref: "Recipe",
       required: true,
     },
+
     viewType: {
       type: String,
-      enum: ["guest", "user"], // Determines whether the view was from a guest or a registered user
+      enum: ["guest", "user"],
       required: true,
     },
+
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // referencing the User collection (for logged-in users)
+      ref: "User",
       default: null,
     },
+
     byGuest: {
       type: String,
-      default: "", // IP Address of the guest if the viewer is not logged in
+      default: "",
     },
+
     deletedAt: {
       type: Date,
-      default: null, // Soft delete
+      default: null,
     },
   },
-  { timestamps: true } // Automatically includes createdAt and updatedAt fields
+
+  { timestamps: true }
 );
 
-// Export the Post View model
 module.exports = mongoose.model("PostView", PostViewSchema);

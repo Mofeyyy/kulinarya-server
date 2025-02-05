@@ -2,82 +2,89 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
-// Recipe Post Schema
-const RecipePostSchema = new Schema(
+const RecipeSchema = new Schema(
   {
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // referencing the User collection
+      ref: "User",
       required: true,
     },
+
     title: {
       type: String,
       required: true,
     },
+
     foodCategory: {
       type: String,
+      enum: ["dishes", "soup", "drinks", "desserts", "pastries"],
       required: true,
     },
-    dishes: {
-      type: [String], // array to store various dish names
-      default: [],
-    },
-    soup: {
-      type: Boolean,
-      default: false,
-    },
-    drinks: {
-      type: Boolean,
-      default: false,
-    },
-    desserts: {
-      type: Boolean,
-      default: false,
-    },
-    pastries: {
-      type: Boolean,
-      default: false,
-    },
+
     originProvince: {
       type: String,
       required: true,
     },
+
     pictureUrl: {
       type: String,
       default: "",
     },
+
     videoUrl: {
       type: String,
       default: "",
     },
+
     description: {
       type: String,
       default: "",
     },
+
     ingredients: {
-      type: [String], // array to hold ingredients
+      type: [String],
       required: true,
     },
+
     procedure: {
-      type: [String], // array to hold procedure steps
-      required: true,
+      type: [
+        {
+          stepNumber: {
+            type: Number,
+            required: true,
+          },
+          content: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
+
+      validate: [
+        (arr) => arr.length > 0,
+        "Procedure must have at least one step.",
+      ], // Check if it is more than one, throw error if not.
     },
+
     moderationInfo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "RecipeModeration", // referencing the Recipe Moderation collection
-      default: null,
+      ref: "Moderation",
+      default: null, // Initially null, but will update after creating a new document on Moderation Collection.
     },
+
     isFeatured: {
       type: Boolean,
       default: false,
     },
+
     deletedAt: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true } // Automatically includes createdAt and updatedAt fields
+
+  { timestamps: true }
 );
 
 // Export the Recipe Post model
-module.exports = mongoose.model("RecipePost", RecipePostSchema);
+module.exports = mongoose.model("Recipe", RecipeSchema);
