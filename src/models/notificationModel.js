@@ -7,28 +7,33 @@ const NotificationSchema = new Schema(
   {
     forUser: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // referencing the User collection
+      ref: "User",
       required: true,
     },
+
     type: {
       type: String,
-      enum: ["moderation", "reaction", "comment"], // Notification types
+      enum: ["moderation", "reaction", "comment"],
       required: true,
     },
+
     content: {
       type: String,
-      required: true, // Content of the notification (e.g., message or details)
+      required: true,
     },
+
     isRead: {
       type: Boolean,
-      default: false, // Tracks whether the notification has been read by the user
+      default: false,
     },
+
     deletedAt: {
       type: Date,
-      default: null, // Soft delete for the notification, instead of removing it
+      default: null,
     },
   },
-  { timestamps: true } // Automatically includes createdAt and updatedAt fields
+
+  { timestamps: true }
 );
 
 // Export the Notification model
