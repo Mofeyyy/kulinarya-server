@@ -1,5 +1,3 @@
-const Announcement = require("../models/announcementModel");
-
 const createAnnouncement = async (req, res) => {
   res.status(200).json({ message: "Create Announcement Route" });
 };

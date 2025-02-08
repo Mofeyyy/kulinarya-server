@@ -1,6 +1,3 @@
-const mongoose = require("mongoose");
-const PlatformVisit = require("../models/platformVisitModel"); // Assuming you have a PlatformVisit model
-
 const trackVisit = async (req, res) => {
   res.status(200).json({ message: "Track Platform Visit Route" });
 };
