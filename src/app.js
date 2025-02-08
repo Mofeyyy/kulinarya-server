@@ -2,7 +2,7 @@
 const express = require("express");
 const app = express();
 
-// Middlewares
+// Middlewares - this controls or modify all the requests and responses
 
 app.use(express.json()); // Convert all requests to JSON file
 
@@ -10,11 +10,11 @@ const cors = require("cors");
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
     allowedHeaders: ["Content-Type"],
   })
-); // For accessing backend on a different domain
+); // For accessing or allowing backend on a different domain
 
 app.use((req, res, next) => {
   console.log(req.path, req.method);
@@ -24,5 +24,10 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
   res.send("Backend is running");
 }); // Respond that the backend is running
+
+// Routes
+// Recipe Routes
+const recipeRoutes = require("./routes/recipeRoutes");
+app.use("/api/recipes", recipeRoutes);
 
 module.exports = app;
