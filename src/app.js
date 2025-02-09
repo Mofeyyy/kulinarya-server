@@ -30,4 +30,20 @@ app.get("/", (req, res) => {
 const recipeRoutes = require("./routes/recipeRoutes");
 app.use("/api/recipes", recipeRoutes);
 
+// Moderation Routes
+const moderationRoutes = require("./routes/moderationRoutes");
+app.use("/api/moderations", moderationRoutes);
+
+// Post View Routes
+const postViewRoutes = require("./routes/postViewRoutes"); 
+app.use("/api/post-views", postViewRoutes);
+
+// Platform Routes
+const platformVisitRoutes = require("./routes/platformVisitRoutes")
+app.use("/api/platform-visits", platformVisitRoutes)
+
+// Announcements Routes
+const announcementRoutes = require("./routes/announcementRoutes")
+app.use("/api/announcements", announcementRoutes)
+
 module.exports = app;
