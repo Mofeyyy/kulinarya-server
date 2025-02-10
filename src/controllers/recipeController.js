@@ -1,5 +1,5 @@
 // Recipe Management
-const createRecipe = async (req, res) => {
+const postNewRecipe = async (req, res) => {
   res.status(200).json({ message: "Recipe Posting Route" });
 };
 
@@ -69,7 +69,7 @@ const softDeleteRecipeComment = async (req, res) => {
 };
 
 module.exports = {
-  createRecipe,
+  postNewRecipe,
   updateRecipe,
   getAllApprovedRecipes,
   getRecipeById,

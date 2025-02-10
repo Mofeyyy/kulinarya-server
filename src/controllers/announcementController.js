@@ -18,11 +18,10 @@ const softDeleteAnnouncement = async (req, res) => {
   res.status(200).json({ message: "Delete Announcement Route" });
 };
 
-
 module.exports = {
   createAnnouncement,
   getAnnouncements,
   getAllActiveAnnouncements,
   updateAnnouncement,
-  softDeleteAnnouncement
+  softDeleteAnnouncement,
 };

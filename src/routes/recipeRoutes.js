@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const {
-  createRecipe,
+  postNewRecipe,
   updateRecipe,
   getAllApprovedRecipes,
   getRecipeById,
@@ -20,10 +20,9 @@ const {
 } = require("../controllers/recipeController");
 
 // Recipe Management
-router.post("/", createRecipe);
+router.post("/", postNewRecipe);
 router.patch("/:recipeId", updateRecipe);
 router.get("/", getAllApprovedRecipes);
-router.get("/:recipeId", getRecipeById);
 router.delete("/:recipeId/soft-delete", softDeleteRecipe);
 
 // Recipe Moderation
@@ -34,8 +33,9 @@ router.patch("/:recipeId/status", updateRecipeStatus);
 router.get("/featured", getFeaturedRecipes);
 router.patch("/:recipeId/feature", featureRecipe);
 
-// Recipe Views
+// Viewing Recipe
 router.post("/:recipeId/view", addRecipeView);
+router.get("/:recipeId", getRecipeById);
 
 // Recipe Reactions
 router.post("/:recipeId/reactions", addRecipeReaction);
