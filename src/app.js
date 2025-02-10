@@ -26,6 +26,14 @@ app.get("/", (req, res) => {
 }); // Respond that the backend is running
 
 // Routes
+// Authentication Routes
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
+
+// User Routes
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/users", userRoutes);
+
 // Recipe Routes
 const recipeRoutes = require("./routes/recipeRoutes");
 app.use("/api/recipes", recipeRoutes);
@@ -35,15 +43,19 @@ const moderationRoutes = require("./routes/moderationRoutes");
 app.use("/api/moderations", moderationRoutes);
 
 // Post View Routes
-const postViewRoutes = require("./routes/postViewRoutes"); 
+const postViewRoutes = require("./routes/postViewRoutes");
 app.use("/api/post-views", postViewRoutes);
 
 // Platform Routes
-const platformVisitRoutes = require("./routes/platformVisitRoutes")
-app.use("/api/platform-visits", platformVisitRoutes)
+const platformVisitRoutes = require("./routes/platformVisitRoutes");
+app.use("/api/platform-visits", platformVisitRoutes);
+
+// Notifications Routes
+const notificationRoutes = require("./routes/notificationRoutes");
+app.use("/api/notifications", notificationRoutes);
 
 // Announcements Routes
-const announcementRoutes = require("./routes/announcementRoutes")
-app.use("/api/announcements", announcementRoutes)
+const announcementRoutes = require("./routes/announcementRoutes");
+app.use("/api/announcements", announcementRoutes);
 
 module.exports = app;

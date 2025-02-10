@@ -8,5 +8,5 @@ const getPlatformVisits = async (req, res) => {
 
 module.exports = {
   trackVisit,
-  getPlatformVisits
+  getPlatformVisits,
 };

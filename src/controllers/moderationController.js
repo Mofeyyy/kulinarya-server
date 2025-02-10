@@ -1,5 +1,4 @@
 const moderatePost = async (req, res) => {
-  
   res.status(200).json({ message: "Moderate Post Route" });
 };
 
@@ -19,5 +18,5 @@ module.exports = {
   moderatePost,
   getModerationHistory,
   updateModeration,
-  softDeleteModeration
-}
+  softDeleteModeration,
+};
