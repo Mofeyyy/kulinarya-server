@@ -1,11 +1,6 @@
 const User = require("../models/userModel");
-const jtw = require("jsonwebtoken");
+const sendVerificationEmail = require("../mail/sendVerificationEmail");
 
-// Ulitity Functions
-const createToken = (userId) =>
-  jtw.sign({ userId }, process.env.SECRET, { expiresIn: "3d" });
-
-// Authentication Controllers
 const userRegistration = async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
 
@@ -13,18 +8,30 @@ const userRegistration = async (req, res) => {
     // User Signup Static and store its data on a variable
     const newUser = await User.signup(email, password, firstName, lastName);
 
-    // Generate a JWT Token
-    const token = createToken(newUser._id);
+    // Send Verification Email
+    await sendVerificationEmail(newUser.email, newUser._id);
 
-    // Send Success Response with user email and token
-    res.status(201).json({ email, token });
+    // Send success response prompting the user to verify its email
+    res
+      .status(201)
+      .json({ message: "Registration successful! Please verify your email." });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
 const emailVerification = async (req, res) => {
-  res.status(200).json({ mssg: "Email Verification Route" });
+  // Get token from the url
+  const { token } = req.query;
+
+  try {
+    // Verify Email
+    const result = await User.verifyEmail(token);
+
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };
 
 const userLogin = async (req, res) => {
