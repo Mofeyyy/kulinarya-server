@@ -1,8 +1,15 @@
+// Imported Libraries
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+// Imported Utility Helper Functions
+const { validateSignup } = require("../utils/validators");
+const { verifyToken } = require("../utils/tokenUtils");
 
 const Schema = mongoose.Schema;
 
-const UserSchema = new Schema(
+const userSchema = new Schema(
   {
     email: {
       type: String,
@@ -60,4 +67,93 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("User", UserSchema);
+// Pre Save Hook -------------------------------------------------
+userSchema.pre("save", async function (next) {
+  try {
+    // Hash password before saving
+    if (this.isModified("password")) {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+    }
+
+    // User name formatting
+    ["firstName", "middleName", "lastName"].forEach((field) => {
+      if (this.isModified(field) && this[field]) {
+        this[field] = this[field]
+          .trim()
+          .toLowerCase()
+          .replace(/\b\w/g, (char) => char.toUpperCase()); // Finds every first letter per word then converts it to uppercase
+      }
+    });
+
+    next(); // Proceed
+  } catch (err) {
+    next(err); // Pass the error to next middleware
+  }
+});
+
+// Static Methods ------------------------------------------------------
+
+// Signup Static Method
+userSchema.statics.signup = async function (
+  email,
+  password,
+  firstName,
+  lastName
+) {
+  try {
+    // Validate user input
+    validateSignup({ email, password, firstName, lastName });
+
+    // Check if email exists
+    const isEmailExists = await this.findOne({ email });
+    if (isEmailExists) {
+      throw Error("Email is already in use!");
+    }
+
+    return await this.create({
+      email,
+      password,
+      firstName,
+      lastName,
+    }); // Create and return the new user
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+// Verification and Authentication Token Creation Static Method
+userSchema.statics.createToken = (userId, expiry) =>
+  jwt.sign({ userId }, process.env.SECRET, { expiresIn: expiry });
+
+// Verify Email Static Method
+userSchema.statics.verifyEmail = async function (token) {
+  try {
+    // Verify and decode the token
+    const decodedToken = verifyToken(token);
+
+    // Find user by id
+    const user = await this.findById(decodedToken.userId);
+
+    // Check if user exists
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    // Check if verified already
+    if (user.isEmailVerified) {
+      throw new Error("Email is already verified.");
+    }
+
+    // Update isEmailVerified status
+    user.isEmailVerified = true;
+    await user.save();
+
+    // Return success message
+    return { message: "Email verified successfully!" };
+  } catch (err) {
+    throw new Error(err.message || "Error on verification process.");
+  }
+};
+
+module.exports = mongoose.model("User", userSchema);
