@@ -200,14 +200,6 @@ userSchema.statics.login = async function (email, password) {
   return {
     message: "Login Success",
     token,
-    user: {
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isEmailVerified: user.isEmailVerified,
-    },
   };
 };
 

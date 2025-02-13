@@ -58,12 +58,12 @@ const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const { message, token, user } = await User.login(email, password);
+    const { message, token } = await User.login(email, password);
 
     // Set the token into a HTTP only cookie
     res.cookie("authToken", token, cookieOptions);
 
-    res.status(200).json({ message, user });
+    res.status(200).json({ message });
   } catch (err) {
     res.status(400).json({ message: `Login Error: ${err.message}` });
   }
@@ -74,8 +74,18 @@ const userLogout = async (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 };
 
-const getUserDetails = async (req, res) => {
-  res.status(200).json({ mssg: "Retrieve User Details Route" });
+const getAuthUserDetails = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select(
+      "email firstName middleName lastName role"
+    ); // Fetch necessary fields
+
+    if (!user) return res.status(404).json({ message: "User not found!" });
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
 const forgotPassword = async (req, res) => {
@@ -92,7 +102,7 @@ module.exports = {
   resendVerificationEmail,
   userLogin,
   userLogout,
-  getUserDetails,
+  getAuthUserDetails,
   forgotPassword,
   resetPassword,
 };
