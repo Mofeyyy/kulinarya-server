@@ -105,7 +105,8 @@ userSchema.statics.signup = async function (
   email,
   password,
   firstName,
-  lastName
+  lastName,
+  role = "user" // Default role is "user" if not provided
 ) {
   try {
     // Validate user input
@@ -117,12 +118,19 @@ userSchema.statics.signup = async function (
       throw Error("Email is already in use!");
     }
 
+    // Ensure role is valid
+    const allowedRoles = ["admin", "creator", "user"];
+    if (!allowedRoles.includes(role)) {
+      throw Error("Invalid role provided!");
+    }
+
     return await this.create({
       email,
       password,
       firstName,
       lastName,
-    }); // Create and return the new user
+      role, // Assign role here
+    });
   } catch (err) {
     throw new Error(err.message);
   }

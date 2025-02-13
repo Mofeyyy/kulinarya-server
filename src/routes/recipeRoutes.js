@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const { authMiddleware, checkRole } = require("../middlewares/authMiddleware"); // Import middleware
+
 const {
   postNewRecipe,
   updateRecipe,
@@ -7,44 +9,24 @@ const {
   getRecipeById,
   getFeaturedRecipes,
   getPendingRecipes,
-  //updateRecipeStatus,
   featureRecipe,
   softDeleteRecipe,
- // addRecipeView,
-  addRecipeReaction,
-  updateRecipeReaction,
-  softDeleteRecipeReaction,
-  addRecipeComment,
-  updateRecipeComment,
-  softDeleteRecipeComment,
 } = require("../controllers/recipeController");
 
-// Recipe Management
-router.post("/", postNewRecipe); //done
-router.patch("/:recipeId", updateRecipe); //done
-router.get("/approved", getAllApprovedRecipes); //done
-router.delete("/:recipeId/soft-delete", softDeleteRecipe);
 
-// Recipe Moderation
-router.get("/pending", getPendingRecipes); //done
-//router.patch("/:recipeId/status", updateRecipeStatus);
+// Recipe Management (Protected)
+router.post("/", authMiddleware, postNewRecipe);
+// Requires login
+router.patch("/:recipeId", authMiddleware, updateRecipe); // Requires login
+router.delete("/:recipeId/soft-delete", authMiddleware, softDeleteRecipe); // Requires login
 
-// Feature Recipe
-router.get("/featured", getFeaturedRecipes);
-router.patch("/:recipeId/feature", featureRecipe);
+// Recipe Moderation (Protected - Only Admin & Content Creators)
+router.get("/pending", authMiddleware, checkRole(["admin", "creator"]), getPendingRecipes);
+router.patch("/:recipeId/feature", authMiddleware, checkRole(["admin", "creator"]), featureRecipe);
 
-// Viewing Recipe
-//router.post("/:recipeId/view", addRecipeView);
-router.get("/:recipeId", getRecipeById); //done
-
-// Recipe Reactions
-router.post("/:recipeId/reactions", addRecipeReaction);
-router.patch("/:recipeId/reactions/update", updateRecipeReaction);
-router.delete("/:recipeId/reactions/soft-delete", softDeleteRecipeReaction);
-
-// Recipe Comments
-router.post("/:recipeId/comments", addRecipeComment);
-router.patch("/:recipeId/comments/update", updateRecipeComment);
-router.delete("/:recipeId/comments/soft-delete", softDeleteRecipeComment);
+// Viewing Recipes (Public)
+router.get("/approved", getAllApprovedRecipes); // Public
+router.get("/featured", getFeaturedRecipes); // Public
+router.get("/:recipeId", getRecipeById); // Public
 
 module.exports = router;

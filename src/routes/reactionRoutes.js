@@ -1,15 +1,11 @@
 const express = require("express");
 const { addRecipeReaction, updateRecipeReaction, softDeleteRecipeReaction } = require("../controllers/reactionController");
+const { authMiddleware } = require("../middlewares/authMiddleware"); // ✅ Middleware import
 
 const router = express.Router();
 
-// Add a new reaction
-router.post("/:recipeId", addRecipeReaction);
-
-// Update an existing reaction
-router.patch("/:reactionId", updateRecipeReaction);
-
-// Soft delete a reaction
-router.delete("/:reactionId", softDeleteRecipeReaction);
+router.post("/:recipeId", authMiddleware, addRecipeReaction);  // ✅ Authenticated
+router.patch("/:reactionId", authMiddleware, updateRecipeReaction);  // ✅ Authenticated
+router.delete("/:reactionId", authMiddleware, softDeleteRecipeReaction);  // ✅ Authenticated
 
 module.exports = router;

@@ -1,6 +1,7 @@
 // Import Express JS
 const express = require("express");
 const app = express();
+require("dotenv").config();
 
 // Middlewares - this controls or modify all the requests and responses
 

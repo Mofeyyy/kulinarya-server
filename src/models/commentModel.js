@@ -19,6 +19,7 @@ const CommentSchema = new Schema(
     content: {
       type: String,
       required: true,
+      maxlength: 500, // Prevents extremely long comments
     },
 
     deletedAt: {
