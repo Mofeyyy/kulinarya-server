@@ -5,7 +5,10 @@ const {
   getPostViews,
 } = require("../controllers/postViewController");
 
-router.post("/", trackPostView); // Track Recipe Views by Users & Guests
-router.get("/:recipeId", getPostViews); // Get Views for a Specific Recipe
+// Track a view for a specific recipe (User & Guest)
+router.post("/:recipeId", trackPostView);
+
+// Get total views for a specific recipe
+router.get("/:recipeId", getPostViews);
 
 module.exports = router;

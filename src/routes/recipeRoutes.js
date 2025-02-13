@@ -7,10 +7,10 @@ const {
   getRecipeById,
   getFeaturedRecipes,
   getPendingRecipes,
-  updateRecipeStatus,
+  //updateRecipeStatus,
   featureRecipe,
   softDeleteRecipe,
-  addRecipeView,
+ // addRecipeView,
   addRecipeReaction,
   updateRecipeReaction,
   softDeleteRecipeReaction,
@@ -20,22 +20,22 @@ const {
 } = require("../controllers/recipeController");
 
 // Recipe Management
-router.post("/", postNewRecipe);
-router.patch("/:recipeId", updateRecipe);
-router.get("/", getAllApprovedRecipes);
+router.post("/", postNewRecipe); //done
+router.patch("/:recipeId", updateRecipe); //done
+router.get("/approved", getAllApprovedRecipes); //done
 router.delete("/:recipeId/soft-delete", softDeleteRecipe);
 
 // Recipe Moderation
-router.get("/pending", getPendingRecipes);
-router.patch("/:recipeId/status", updateRecipeStatus);
+router.get("/pending", getPendingRecipes); //done
+//router.patch("/:recipeId/status", updateRecipeStatus);
 
 // Feature Recipe
 router.get("/featured", getFeaturedRecipes);
 router.patch("/:recipeId/feature", featureRecipe);
 
 // Viewing Recipe
-router.post("/:recipeId/view", addRecipeView);
-router.get("/:recipeId", getRecipeById);
+//router.post("/:recipeId/view", addRecipeView);
+router.get("/:recipeId", getRecipeById); //done
 
 // Recipe Reactions
 router.post("/:recipeId/reactions", addRecipeReaction);
