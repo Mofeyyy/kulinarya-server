@@ -1,0 +1,7 @@
+const RESEND_VERIFICATION_LIMIT = 5 * 60 * 1000; // 5 minutes cooldown
+const RESEND_VERIFICATION_MAX_ATTEMPTS = 3; // 3 attempts per day
+
+module.exports = {
+  RESEND_VERIFICATION_LIMIT,
+  RESEND_VERIFICATION_MAX_ATTEMPTS,
+};

@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   userRegistration,
   emailVerification,
+  resendVerificationEmail,
   userLogin,
   userLogout,
   getUserDetails,
@@ -13,6 +14,7 @@ const {
 // User Registration
 router.post("/register", userRegistration);
 router.get("/verify-email", emailVerification);
+router.post("/resend-verification", resendVerificationEmail);
 
 // Login, Logout & User Details Retrieval
 router.post("/login", userLogin);

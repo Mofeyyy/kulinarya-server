@@ -16,7 +16,7 @@ const userRegistration = async (req, res) => {
       .status(201)
       .json({ message: "Registration successful! Please verify your email." });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ message: err.message });
   }
 };
 
@@ -29,6 +29,23 @@ const emailVerification = async (req, res) => {
     const result = await User.verifyEmail(token);
 
     res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const { userEmail, userId } = await User.resendVerificationEmail(email);
+
+    // Send Verification Email
+    await sendVerificationEmail(userEmail, userId);
+
+    return res
+      .status(200)
+      .json({ message: "Verification email resent successfully!" });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -57,6 +74,7 @@ const resetPassword = async (req, res) => {
 module.exports = {
   userRegistration,
   emailVerification,
+  resendVerificationEmail,
   userLogin,
   userLogout,
   getUserDetails,

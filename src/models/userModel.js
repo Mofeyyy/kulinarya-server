@@ -7,6 +7,12 @@ const jwt = require("jsonwebtoken");
 const { validateSignup } = require("../utils/validators");
 const { verifyToken } = require("../utils/tokenUtils");
 
+// Imported Models
+const VerificationAttempt = require("./verificationAttemptModel");
+
+// Imported Mail
+// const sendVerificationEmail = require("../mail/sendVerificationEmail");
+
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema(
@@ -154,6 +160,25 @@ userSchema.statics.verifyEmail = async function (token) {
   } catch (err) {
     throw new Error(err.message || "Error on verification process.");
   }
+};
+
+// Resend Verification Static Method
+userSchema.statics.resendVerificationEmail = async function (email) {
+  // Find user by email
+  const user = await this.findOne({ email });
+
+  // Check if user exists
+  if (!user) throw new Error("User not found.");
+
+  if (user.isEmailVerified) throw new Error("Email is already verified.");
+
+  // Check if resend is allowed
+  const { allowed, message } =
+    await VerificationAttempt.isVerificationResendAllowed(user._id);
+
+  if (!allowed) throw new Error(message);
+
+  return { userEmail: user.email, userId: user._id };
 };
 
 module.exports = mongoose.model("User", userSchema);
