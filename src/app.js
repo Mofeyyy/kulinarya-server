@@ -38,6 +38,10 @@ app.use("/api/users", userRoutes);
 const recipeRoutes = require("./routes/recipeRoutes");
 app.use("/api/recipes", recipeRoutes);
 
+// Reaction Routes
+const reactionRoutes = require("./routes/reactionRoutes");
+app.use("/api/reactions", reactionRoutes);
+
 // Moderation Routes
 const moderationRoutes = require("./routes/moderationRoutes");
 app.use("/api/moderations", moderationRoutes);
