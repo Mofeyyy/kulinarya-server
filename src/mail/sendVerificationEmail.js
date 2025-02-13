@@ -1,8 +1,8 @@
-// Imported Utility Helper Functions
-const transporter = require("../utils/emailTransporter");
-
 // Imported Models
 const User = require("../models/userModel");
+
+// Imported Utility Helper Functions
+const transporter = require("../utils/emailTransporter");
 
 const sendVerificationEmail = async (userEmail, userId) => {
   try {
@@ -20,7 +20,7 @@ const sendVerificationEmail = async (userEmail, userId) => {
       html: `<p>Click the link to verify your email: <a href="${verificationLink}">Verify Email</a></p>`,
     });
   } catch (err) {
-    throw new Error("Error on sending verification email.");
+    throw new Error(`Error on sending email: ${err.message}`);
   }
 };
 

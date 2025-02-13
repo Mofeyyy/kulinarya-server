@@ -1,0 +1,17 @@
+meta {
+  name: Resend Email Verification
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:4000/api/auth/resend-verification
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "seancortez41@gmail.com"
+  }
+}
