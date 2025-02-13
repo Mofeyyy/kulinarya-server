@@ -129,8 +129,8 @@ userSchema.statics.signup = async function (
 };
 
 // Verification and Authentication Token Creation Static Method
-userSchema.statics.createToken = (userId, expiry) =>
-  jwt.sign({ userId }, process.env.SECRET, { expiresIn: expiry });
+userSchema.statics.createToken = (content, expiry) =>
+  jwt.sign(content, process.env.SECRET, { expiresIn: expiry });
 
 // Verify Email Static Method
 userSchema.statics.verifyEmail = async function (token) {
@@ -179,6 +179,36 @@ userSchema.statics.resendVerificationEmail = async function (email) {
   if (!allowed) throw new Error(message);
 
   return { userEmail: user.email, userId: user._id };
+};
+
+// User Login Static Method
+userSchema.statics.login = async function (email, password) {
+  // Check if user exists
+  const user = await this.findOne({ email });
+  if (!user) throw new Error("User not found!");
+
+  // Check if password matched
+  const isMatch = bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error("Invalid credentials");
+
+  if (!user.isEmailVerified)
+    throw new Error("Account not verified. Please verify your email.");
+
+  // Generate Login Token
+  const token = this.createToken({ userId: user._id, email: user.email }, "7d");
+
+  return {
+    message: "Login Success",
+    token,
+    user: {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isEmailVerified: user.isEmailVerified,
+    },
+  };
 };
 
 module.exports = mongoose.model("User", userSchema);

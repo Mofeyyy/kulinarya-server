@@ -1,6 +1,9 @@
 const User = require("../models/userModel");
 const sendVerificationEmail = require("../mail/sendVerificationEmail");
 
+// Imported Constants
+const cookieOptions = require("../constants/cookieConfig");
+
 const userRegistration = async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
 
@@ -52,11 +55,23 @@ const resendVerificationEmail = async (req, res) => {
 };
 
 const userLogin = async (req, res) => {
-  res.status(200).json({ mssg: "Login Route" });
+  try {
+    const { email, password } = req.body;
+
+    const { message, token, user } = await User.login(email, password);
+
+    // Set the token into a HTTP only cookie
+    res.cookie("authToken", token, cookieOptions);
+
+    res.status(200).json({ message, user });
+  } catch (err) {
+    res.status(400).json({ message: `Login Error: ${err.message}` });
+  }
 };
 
 const userLogout = async (req, res) => {
-  res.status(200).json({ mssg: "Logout Route" });
+  res.clearCookie("authToken");
+  res.status(200).json({ message: "Logged out successfully" });
 };
 
 const getUserDetails = async (req, res) => {

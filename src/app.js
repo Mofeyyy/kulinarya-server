@@ -1,10 +1,12 @@
-// Import Express JS
 const express = require("express");
 const app = express();
+const cookieParser = require("cookie-parser");
 
 // Middlewares - this controls or modify all the requests and responses
 
 app.use(express.json()); // Convert all requests to JSON file
+
+app.use(cookieParser());
 
 const cors = require("cors");
 app.use(

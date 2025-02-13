@@ -7,7 +7,7 @@ const transporter = require("../utils/emailTransporter");
 const sendVerificationEmail = async (userEmail, userId) => {
   try {
     // Generate Verification Token with 1d expiry
-    const token = User.createToken(userId, "1d");
+    const token = User.createToken({ userId }, "1d");
 
     // Create Verification Link
     const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
