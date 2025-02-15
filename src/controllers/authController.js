@@ -1,5 +1,6 @@
 const User = require("../models/userModel");
 const sendVerificationEmail = require("../mail/sendVerificationEmail");
+const sendPasswordResetEmail = require("../mail/sendPasswordResetEmail");
 
 // Imported Constants
 const cookieOptions = require("../constants/cookieConfig");
@@ -89,11 +90,36 @@ const getAuthUserDetails = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
-  res.status(200).json({ mssg: "Forgot Password Route" });
+  try {
+    const { email } = req.body;
+
+    const { userEmail, userId, sendAttempts } =
+      await User.sendPasswordResetEmail(email);
+
+    // Send Verification Email
+    await sendPasswordResetEmail(userEmail, userId);
+
+    return res.status(200).json({
+      message: `Password reset ${
+        sendAttempts > 1 ? "resent" : "sent"
+      } successfully!`,
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };
 
 const resetPassword = async (req, res) => {
-  res.status(200).json({ mssg: "Reset Password Route" });
+  try {
+    const { token } = req.query;
+    const { newPassword } = req.body;
+
+    const result = await User.passwordReset(token, newPassword);
+
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };
 
 module.exports = {

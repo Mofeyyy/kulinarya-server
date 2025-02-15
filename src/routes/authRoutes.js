@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { authenticateUser } = require("../middleware/authMiddleware");
+const authenticateUser = require("../middleware/authenticateUser");
+const resendLimiter = require("../middleware/resendLimiter");
 const {
   userRegistration,
   emailVerification,
@@ -23,7 +24,7 @@ router.post("/logout", userLogout);
 router.get("/user-details", authenticateUser, getAuthUserDetails);
 
 // Password Recovery
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+router.post("/forgot-password", resendLimiter, forgotPassword);
+router.post("/reset-password", resendLimiter, resetPassword);
 
 module.exports = router;

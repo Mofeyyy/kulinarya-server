@@ -4,11 +4,14 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 // Imported Utility Helper Functions
-const { validateSignup } = require("../utils/validators");
+const {
+  validateSignup,
+  validateUpdatePassword,
+} = require("../utils/validators");
 const { verifyToken } = require("../utils/tokenUtils");
 
 // Imported Models
-const VerificationAttempt = require("./verificationAttemptModel");
+const ResendAttempt = require("./resendAttemptModel");
 
 // Imported Mail
 // const sendVerificationEmail = require("../mail/sendVerificationEmail");
@@ -173,12 +176,16 @@ userSchema.statics.resendVerificationEmail = async function (email) {
   if (user.isEmailVerified) throw new Error("Email is already verified.");
 
   // Check if resend is allowed
-  const { allowed, message } =
-    await VerificationAttempt.isVerificationResendAllowed(user._id);
+  const { allowed, message } = await ResendAttempt.handleResendAttempt(
+    user.email,
+    "verification"
+  );
 
   if (!allowed) throw new Error(message);
 
   return { userEmail: user.email, userId: user._id };
+
+  // TODO: RETEST THIS REQUEST
 };
 
 // User Login Static Method
@@ -201,6 +208,43 @@ userSchema.statics.login = async function (email, password) {
     message: "Login Success",
     token,
   };
+};
+
+// Static method for sending a password reset email
+userSchema.statics.sendPasswordResetEmail = async function (email) {
+  const user = await this.findOne({ email });
+
+  // Check if user exists
+  if (!user) throw new Error("User not found.");
+
+  // Check if resend is allowed
+  const { allowed, attempts, message } =
+    await ResendAttempt.handleResendAttempt(user.email, "password-reset");
+
+  if (!allowed) throw new Error(message);
+
+  return { userEmail: user.email, userId: user._id, sendAttempts: attempts };
+};
+
+// Static method for password reset
+userSchema.statics.passwordReset = async function (token, newPassword) {
+  // Check if strong password
+  validateUpdatePassword(newPassword);
+
+  // Verify token
+  const decodedToken = verifyToken(token);
+
+  const user = await this.findById(decodedToken.userId);
+
+  // If no user found in token's userId, it is invalid
+  if (!user) throw new Error("Invalid or expired token");
+
+  console.log(user.password);
+
+  user.password = newPassword;
+  await user.save();
+
+  return { message: "Password has been reset successfully" };
 };
 
 module.exports = mongoose.model("User", userSchema);

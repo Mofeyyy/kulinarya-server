@@ -14,6 +14,14 @@ const validateSignup = ({ email, password, firstName, lastName }) => {
   }
 };
 
+const validateUpdatePassword = (password) => {
+  if (!validator.isStrongPassword(password))
+    throw new Error(
+      "Password is not strong enough! (Include uppercase, numbers, and special characters)"
+    );
+};
+
 module.exports = {
   validateSignup,
+  validateUpdatePassword,
 };

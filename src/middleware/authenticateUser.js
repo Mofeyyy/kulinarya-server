@@ -1,4 +1,3 @@
-const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../utils/tokenUtils");
 
 const authenticateUser = (req, res, next) => {
@@ -18,4 +17,4 @@ const authenticateUser = (req, res, next) => {
   }
 };
 
-module.exports = { authenticateUser };
+module.exports = authenticateUser;
