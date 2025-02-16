@@ -18,6 +18,8 @@ import {
 
 const router = express.Router();
 
+// TODO: Put Resend Limiter To Routes
+
 // User Registration
 router.post("/register", userRegistration);
 router.get("/verify-email", emailVerification);

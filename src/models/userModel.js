@@ -100,7 +100,7 @@ userSchema.methods.generateAuthToken = function (res) {
     { expiresIn: "7d" }
   );
 
-  res.cookie("kulinarya-auth-token", token, {
+  res.cookie("kulinarya_auth_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",

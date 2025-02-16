@@ -71,8 +71,8 @@ export const userLogin = async (req, res) => {
   }
 };
 
-export const userLogout = async (req, res) => {
-  res.clearCookie("kulinarya-auth-token");
+export const userLogout = async (_, res) => {
+  res.clearCookie("kulinarya_auth_token");
   res.status(200).json({ message: "Logged out successfully" });
 };
 
