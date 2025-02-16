@@ -1,8 +1,8 @@
 // Imported Constants
-const {
+import {
   RESEND_ATTEMPT_LIMIT,
   RESEND_ATTEMPT_MAX_ATTEMPTS,
-} = require("../constants/limits");
+} from "../constants/limits";
 
 const checkResendAttemptLimits = (attempts, lastAttempt, now) => {
   const hasReachedMaxAttempts = attempts >= RESEND_ATTEMPT_MAX_ATTEMPTS;
@@ -21,4 +21,4 @@ const checkResendAttemptLimits = (attempts, lastAttempt, now) => {
   };
 };
 
-module.exports = { checkResendAttemptLimits };
+export default checkResendAttemptLimits;

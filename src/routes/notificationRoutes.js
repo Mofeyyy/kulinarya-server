@@ -1,11 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+
+//  Imported Controllers
+import {
   getUserNotifications,
   readSpecificNotification,
   readAllNotifications,
   softDeleteNotification,
-} = require("../controllers/notificationController");
+} from "../controllers/notificationController.js";
+
+const router = express.Router();
 
 router.get("/users/:userId", getUserNotifications);
 router.patch("/:notificationId/read", readSpecificNotification);

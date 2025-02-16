@@ -1,4 +1,4 @@
-const { verifyToken } = require("../utils/tokenUtils");
+import { verifyToken } from "../utils/tokenUtils";
 
 const authenticateUser = (req, res, next) => {
   const token = req.cookies.authToken; // Read token from cookies
@@ -17,4 +17,4 @@ const authenticateUser = (req, res, next) => {
   }
 };
 
-module.exports = authenticateUser;
+export default authenticateUser;

@@ -1,8 +1,11 @@
-const express = require("express");
-const router = express.Router();
-const authenticateUser = require("../middleware/authenticateUser");
-const resendLimiter = require("../middleware/resendLimiter");
-const {
+import express from "express";
+
+// Imported Middlewares
+import authenticateUser from "../middleware/authenticateUser.js";
+import resendLimiter from "../middleware/resendLimiter.js";
+
+// Imported Controllers
+import {
   userRegistration,
   emailVerification,
   resendVerificationEmail,
@@ -11,7 +14,9 @@ const {
   getAuthUserDetails,
   forgotPassword,
   resetPassword,
-} = require("../controllers/authController");
+} from "../controllers/authController.js";
+
+const router = express.Router();
 
 // User Registration
 router.post("/register", userRegistration);
@@ -27,4 +32,4 @@ router.get("/user-details", authenticateUser, getAuthUserDetails);
 router.post("/forgot-password", resendLimiter, forgotPassword);
 router.post("/reset-password", resendLimiter, resetPassword);
 
-module.exports = router;
+export default router;

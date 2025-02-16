@@ -1,22 +1,13 @@
-// Imported Libraries
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+import { Schema } from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-// Imported Utility Helper Functions
-const {
-  validateSignup,
-  validateUpdatePassword,
-} = require("../utils/validators");
-const { verifyToken } = require("../utils/tokenUtils");
+// Imported Utility Functions
+import { validateSignup, validateUpdatePassword } from "../utils/validators.js";
+import { verifyToken } from "../utils/tokenUtils.js";
 
 // Imported Models
-const ResendAttempt = require("./resendAttemptModel");
-
-// Imported Mail
-// const sendVerificationEmail = require("../mail/sendVerificationEmail");
-
-const Schema = mongoose.Schema;
+import ResendAttempt from "./resendAttemptModel.js";
 
 const userSchema = new Schema(
   {
@@ -76,7 +67,7 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-// Pre Save Hook -------------------------------------------------
+// TODO: Change this to zod schema
 userSchema.pre("save", async function (next) {
   try {
     // Hash password before saving
@@ -91,17 +82,42 @@ userSchema.pre("save", async function (next) {
         this[field] = this[field]
           .trim()
           .toLowerCase()
-          .replace(/\b\w/g, (char) => char.toUpperCase()); // Finds every first letter per word then converts it to uppercase
+          .replace(/\b\w/g, (char) => char.toUpperCase());
       }
     });
 
-    next(); // Proceed
+    next();
   } catch (err) {
-    next(err); // Pass the error to next middleware
+    next(err);
   }
 });
 
-// Static Methods ------------------------------------------------------
+// Generate Auth Token Method
+userSchema.methods.generateAuthToken = function (res) {
+  const token = jwt.sign(
+    { userId: this._id, email: this.email },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.cookie("kulinarya-auth-token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
+// Generate Verification and Forgot Password Token Method
+userSchema.methods.generateToken = function (type) {
+  const expiresIn = type === "emailVerification" ? "1h" : "15m";
+
+  return jwt.sign(
+    { userId: this._id, email: this.email },
+    process.env.JWT_SECRET,
+    { expiresIn }
+  );
+};
 
 // Signup Static Method
 userSchema.statics.signup = async function (
@@ -111,29 +127,23 @@ userSchema.statics.signup = async function (
   lastName
 ) {
   try {
-    // Validate user input
+    // TODO: Change validation to zod schema
     validateSignup({ email, password, firstName, lastName });
 
-    // Check if email exists
     const isEmailExists = await this.findOne({ email });
-    if (isEmailExists) {
-      throw Error("Email is already in use!");
-    }
+
+    if (isEmailExists) throw Error("Email is already in use!");
 
     return await this.create({
       email,
       password,
       firstName,
       lastName,
-    }); // Create and return the new user
+    });
   } catch (err) {
     throw new Error(err.message);
   }
 };
-
-// Verification and Authentication Token Creation Static Method
-userSchema.statics.createToken = (content, expiry) =>
-  jwt.sign(content, process.env.SECRET, { expiresIn: expiry });
 
 // Verify Email Static Method
 userSchema.statics.verifyEmail = async function (token) {
@@ -141,24 +151,15 @@ userSchema.statics.verifyEmail = async function (token) {
     // Verify and decode the token
     const decodedToken = verifyToken(token);
 
-    // Find user by id
     const user = await this.findById(decodedToken.userId);
 
-    // Check if user exists
-    if (!user) {
-      throw new Error("User not found.");
-    }
+    if (!user) throw new Error("User not found.");
 
-    // Check if verified already
-    if (user.isEmailVerified) {
-      throw new Error("Email is already verified.");
-    }
+    if (user.isEmailVerified) throw new Error("Email is already verified.");
 
-    // Update isEmailVerified status
     user.isEmailVerified = true;
     await user.save();
 
-    // Return success message
     return { message: "Email verified successfully!" };
   } catch (err) {
     throw new Error(err.message || "Error on verification process.");
@@ -167,10 +168,8 @@ userSchema.statics.verifyEmail = async function (token) {
 
 // Resend Verification Static Method
 userSchema.statics.resendVerificationEmail = async function (email) {
-  // Find user by email
   const user = await this.findOne({ email });
 
-  // Check if user exists
   if (!user) throw new Error("User not found.");
 
   if (user.isEmailVerified) throw new Error("Email is already verified.");
@@ -183,47 +182,45 @@ userSchema.statics.resendVerificationEmail = async function (email) {
 
   if (!allowed) throw new Error(message);
 
-  return { userEmail: user.email, userId: user._id };
-
-  // TODO: RETEST THIS REQUEST
+  return user;
 };
 
 // User Login Static Method
 userSchema.statics.login = async function (email, password) {
-  // Check if user exists
   const user = await this.findOne({ email });
+
   if (!user) throw new Error("User not found!");
 
-  // Check if password matched
-  const isMatch = bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error("Invalid credentials");
+  const isPasswordMatch = bcrypt.compare(password, user.password);
+  if (!isPasswordMatch) throw new Error("Invalid credentials");
 
-  if (!user.isEmailVerified)
-    throw new Error("Account not verified. Please verify your email.");
+  return user;
+};
 
-  // Generate Login Token
-  const token = this.createToken({ userId: user._id, email: user.email }, "7d");
+// Getting Auth User Details Static Method
+userSchema.statics.getAuthUserDetails = async function (req) {
+  const user = await this.findById(req.user.userId).select(
+    "email firstName middleName lastName role"
+  ); // Fetch necessary fields
 
-  return {
-    message: "Login Success",
-    token,
-  };
+  if (!user) throw new Error("User not found!");
+
+  return user;
 };
 
 // Static method for sending a password reset email
 userSchema.statics.sendPasswordResetEmail = async function (email) {
   const user = await this.findOne({ email });
 
-  // Check if user exists
   if (!user) throw new Error("User not found.");
 
   // Check if resend is allowed
   const { allowed, attempts, message } =
-    await ResendAttempt.handleResendAttempt(user.email, "password-reset");
+    await ResendAttempt.handleResendAttempt(user.email, "passwordReset");
 
   if (!allowed) throw new Error(message);
 
-  return { userEmail: user.email, userId: user._id, sendAttempts: attempts };
+  return { user, sendAttempts: attempts };
 };
 
 // Static method for password reset
@@ -231,7 +228,6 @@ userSchema.statics.passwordReset = async function (token, newPassword) {
   // Check if strong password
   validateUpdatePassword(newPassword);
 
-  // Verify token
   const decodedToken = verifyToken(token);
 
   const user = await this.findById(decodedToken.userId);
@@ -239,12 +235,11 @@ userSchema.statics.passwordReset = async function (token, newPassword) {
   // If no user found in token's userId, it is invalid
   if (!user) throw new Error("Invalid or expired token");
 
-  console.log(user.password);
-
   user.password = newPassword;
   await user.save();
 
   return { message: "Password has been reset successfully" };
 };
 
-module.exports = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

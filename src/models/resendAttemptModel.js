@@ -1,13 +1,13 @@
-const mongoose = require("mongoose");
+import { Schema } from "mongoose";
 
 // Imported Utilities
-const { checkResendAttemptLimits } = require("../utils/resendAttemptUtils");
+import { checkResendAttemptLimits } from "../utils/resendAttemptUtils";
 
-const resendAttemptSchema = new mongoose.Schema({
+const resendAttemptSchema = new Schema({
   email: { type: String, required: true },
   type: {
     type: String,
-    enum: ["verification", "password-reset"],
+    enum: ["verification", "passwordReset"],
     required: true,
   },
   attempts: { type: Number, default: 0 },
@@ -53,7 +53,7 @@ resendAttemptSchema.statics.handleResendAttempt = async function (email, type) {
       message: `Please wait ${remainingCooldownTime} seconds before requesting another ${
         type === "verification"
           ? "verification"
-          : type === "password-reset"
+          : type === "passwordReset"
           ? "password reset"
           : ""
       } email.`,
@@ -68,4 +68,5 @@ resendAttemptSchema.statics.handleResendAttempt = async function (email, type) {
   return { allowed: true, attempts: attemptRecord.attempts };
 };
 
-module.exports = mongoose.model("ResendAttempt", resendAttemptSchema);
+const ResendAttempt = mongoose.model("ResendAttempt", resendAttemptSchema);
+export default ResendAttempt;

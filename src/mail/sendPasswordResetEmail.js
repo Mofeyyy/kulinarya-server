@@ -1,21 +1,17 @@
-// Imported Models
-const User = require("../models/userModel");
-
 // Imported Utility Helper Functions
-const transporter = require("../utils/emailTransporter");
+import { sendMail } from "../utils/emailTransporter";
 
-const sendPasswordResetEmail = async (userEmail, userId) => {
+const sendPasswordResetEmail = async (user) => {
   try {
-    // Generate Verification Token with 1d expiry
-    const token = User.createToken({ userId }, "15m");
+    // Generate Password Reset Token with 15mins expiry
+    const token = user.generateToken("passwordReset");
 
-    // Create Verification Link
     const resetPasswordLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
     // Send to User Email Address
-    await transporter.sendMail({
+    await sendMail({
       from: process.env.EMAIL_USER,
-      to: userEmail,
+      to: user.email,
       subject: "Password Reset",
       html: `<p>Click the link to reset your password: <a href="${resetPasswordLink}">Reset Your Password</a></p>`,
     });
@@ -24,4 +20,4 @@ const sendPasswordResetEmail = async (userEmail, userId) => {
   }
 };
 
-module.exports = sendPasswordResetEmail;
+export default sendPasswordResetEmail;

@@ -1,11 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+
+// Imported Controllers
+import {
   moderatePost,
   getModerationHistory,
   updateModeration,
   softDeleteModeration,
-} = require("../controllers/moderationController");
+} from "../controllers/moderationController.js";
+
+const router = express.Router();
 
 // Moderation Management
 router.post("/", moderatePost); // Approve/Reject Recipes
