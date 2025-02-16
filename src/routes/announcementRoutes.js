@@ -6,6 +6,7 @@ import {
   getAllActiveAnnouncements,
   updateAnnouncement,
   softDeleteAnnouncement,
+  getAnnouncements,
 } from "../controllers/announcementController.js";
 
 const router = express.Router();
@@ -15,4 +16,4 @@ router.patch("/:id", updateAnnouncement); // Update Announcement
 router.delete("/:id/soft-delete", softDeleteAnnouncement); // Soft Delete Announcement
 router.get("/", getAllActiveAnnouncements); // Fetch All Active Announcements (with optional limit query) /api/announcements?limit=<number>
 
-module.exports = router;
+export default router;

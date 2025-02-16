@@ -11,4 +11,4 @@ const router = express.Router();
 router.post("/", trackVisit); // Track Guest/User Visits
 router.get("/", getPlatformVisits); // Get Platform Visit Statistics (Admin Dashboard)
 
-module.exports = router;
+export default router;

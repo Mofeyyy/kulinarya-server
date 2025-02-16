@@ -2,9 +2,9 @@
 import {
   RESEND_ATTEMPT_LIMIT,
   RESEND_ATTEMPT_MAX_ATTEMPTS,
-} from "../constants/limits";
+} from "../constants/limits.js";
 
-const checkResendAttemptLimits = (attempts, lastAttempt, now) => {
+export const checkResendAttemptLimits = (attempts, lastAttempt, now) => {
   const hasReachedMaxAttempts = attempts >= RESEND_ATTEMPT_MAX_ATTEMPTS;
 
   const isInCooldownPeriod =
@@ -20,5 +20,3 @@ const checkResendAttemptLimits = (attempts, lastAttempt, now) => {
     remainingCooldownTime,
   };
 };
-
-export default checkResendAttemptLimits;

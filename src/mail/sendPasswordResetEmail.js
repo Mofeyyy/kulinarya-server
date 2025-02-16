@@ -1,5 +1,5 @@
 // Imported Utility Helper Functions
-import { sendMail } from "../utils/emailTransporter";
+import transporter from "../utils/emailTransporter.js";
 
 const sendPasswordResetEmail = async (user) => {
   try {
@@ -9,7 +9,7 @@ const sendPasswordResetEmail = async (user) => {
     const resetPasswordLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
     // Send to User Email Address
-    await sendMail({
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: "Password Reset",

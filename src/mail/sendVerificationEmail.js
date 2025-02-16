@@ -1,5 +1,5 @@
 // Imported Utility Helper Functions
-import { sendMail } from "../utils/emailTransporter";
+import transporter from "../utils/emailTransporter.js";
 
 const sendVerificationEmail = async (user) => {
   try {
@@ -9,7 +9,7 @@ const sendVerificationEmail = async (user) => {
     const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
     // Send to User Email Address
-    await sendMail({
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: "Verify Your Email",

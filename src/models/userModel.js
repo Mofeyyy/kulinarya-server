@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -241,5 +241,5 @@ userSchema.statics.passwordReset = async function (token, newPassword) {
   return { message: "Password has been reset successfully" };
 };
 
-const User = mongoose.model("User", userSchema);
+const User = model("User", userSchema);
 export default User;

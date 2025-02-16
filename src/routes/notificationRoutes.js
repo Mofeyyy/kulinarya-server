@@ -15,4 +15,4 @@ router.patch("/:notificationId/read", readSpecificNotification);
 router.patch("/:notificationId/read-all", readAllNotifications);
 router.delete("/:notificationId/soft-delete", softDeleteNotification);
 
-module.exports = router;
+export default router;

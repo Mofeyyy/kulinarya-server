@@ -1,7 +1,7 @@
-import { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 
 // Imported Utilities
-import { checkResendAttemptLimits } from "../utils/resendAttemptUtils";
+import { checkResendAttemptLimits } from "../utils/resendAttemptUtils.js";
 
 const resendAttemptSchema = new Schema({
   email: { type: String, required: true },
@@ -68,5 +68,5 @@ resendAttemptSchema.statics.handleResendAttempt = async function (email, type) {
   return { allowed: true, attempts: attemptRecord.attempts };
 };
 
-const ResendAttempt = mongoose.model("ResendAttempt", resendAttemptSchema);
+const ResendAttempt = model("ResendAttempt", resendAttemptSchema);
 export default ResendAttempt;

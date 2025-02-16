@@ -1,4 +1,4 @@
-import { verifyToken } from "../utils/tokenUtils";
+import { verifyToken } from "../utils/tokenUtils.js";
 
 const authenticateUser = (req, res, next) => {
   const token = req.cookies.authToken; // Read token from cookies
