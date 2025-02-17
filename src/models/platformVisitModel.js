@@ -1,6 +1,5 @@
 import { Schema, model } from "mongoose";
 
-
 const PlatformVisitSchema = new Schema(
   {
     visitType: {

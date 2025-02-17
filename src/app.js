@@ -17,6 +17,9 @@ import platformVisitRoutes from "./routes/platformVisitRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 
+// Imported Middlewares
+import errorHandler from "./middleware/errorHandler.js";
+
 const app = express();
 
 app.use(express.json()); // Convert all requests to JSON file
@@ -51,5 +54,7 @@ app.use("/api/post-views", postViewRoutes);
 app.use("/api/platform-visits", platformVisitRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/announcements", announcementRoutes);
+
+app.use(errorHandler); // Global Error Handler
 
 export default app;

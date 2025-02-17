@@ -1,6 +1,5 @@
 import { Schema, model } from "mongoose";
 
-
 // Post View Schema
 const PostViewSchema = new Schema(
   {

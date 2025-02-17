@@ -1,6 +1,5 @@
 import { Schema, model } from "mongoose";
 
-
 // Imported Utilities
 import { checkResendAttemptLimits } from "../utils/resendAttemptUtils.js";
 
