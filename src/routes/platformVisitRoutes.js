@@ -1,14 +1,14 @@
-const express = require("express");
+import express from "express";
+
+// Imported Controllers
+import {
+  trackVisit,
+  getPlatformVisits,
+} from "../controllers/platformVisitController.js";
+
 const router = express.Router();
-const { trackVisit, getPlatformVisits } = require("../controllers/platformVisitController");
-//const requireAuth = require("../middlewares/requireAuth");
-//const requireRole = require("../middlewares/requireRole");
 
-// Track a guest/user visit
-router.post("/track", trackVisit);
+router.post("/", trackVisit); // Track Guest/User Visits
+router.get("/", getPlatformVisits); // Get Platform Visit Statistics (Admin Dashboard)
 
-// Get platform visit statistics (Admin Only)
-//router.get("/", requireAuth, requireRole(["admin"]), getPlatformVisits); for authentication
-router.get("/", getPlatformVisits);
-
-module.exports = router;
+export default router;

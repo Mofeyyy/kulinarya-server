@@ -1,8 +1,7 @@
-const express = require("express");
-const router = express.Router();
-const { authMiddleware, checkRole } = require("../middlewares/authMiddleware"); // Import middleware
+import express from "express";
 
-const {
+// Imported Controllers
+import {
   postNewRecipe,
   updateRecipe,
   getAllApprovedRecipes,
@@ -10,23 +9,29 @@ const {
   getFeaturedRecipes,
   getPendingRecipes,
   featureRecipe,
-  softDeleteRecipe,
-} = require("../controllers/recipeController");
+  softDeleteRecipe
+} from "../controllers/recipeController.js";
 
+// Imported Middlewares
+import { authenticateUser } from "../middleware/authenticateUser.js";
+import checkRole from "../middleware/checkRole.js";
+
+const router = express.Router();
 
 // Recipe Management (Protected)
-router.post("/", authMiddleware, postNewRecipe);
+router.post("/", authenticateUser, postNewRecipe);
 // Requires login
-router.patch("/:recipeId", authMiddleware, updateRecipe); // Requires login
-router.delete("/:recipeId/soft-delete", authMiddleware, softDeleteRecipe); // Requires login
+router.patch("/:recipeId", authenticateUser, updateRecipe); // Requires login
+router.delete("/:recipeId/soft-delete", authenticateUser, softDeleteRecipe); // Requires login
 
 // Recipe Moderation (Protected - Only Admin & Content Creators)
-router.get("/pending", authMiddleware, checkRole(["admin", "creator"]), getPendingRecipes);
-router.patch("/:recipeId/feature", authMiddleware, checkRole(["admin", "creator"]), featureRecipe);
+router.get("/pending", authenticateUser, checkRole(["admin", "creator"]), getPendingRecipes);
+router.patch("/:recipeId/feature", authenticateUser, checkRole(["admin", "creator"]), featureRecipe);
 
 // Viewing Recipes (Public)
 router.get("/approved", getAllApprovedRecipes); // Public
 router.get("/featured", getFeaturedRecipes); // Public
 router.get("/:recipeId", getRecipeById); // Public
 
-module.exports = router;
+
+export default router;

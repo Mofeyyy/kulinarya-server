@@ -1,6 +1,5 @@
-const mongoose = require("mongoose");
-
-const Schema = mongoose.Schema;
+import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const RecipeSchema = new Schema(
   {
@@ -91,5 +90,5 @@ const RecipeSchema = new Schema(
   { timestamps: true }
 );
 
-// Export the Recipe Post model
-module.exports = mongoose.model("Recipe", RecipeSchema);
+const Recipe = model("Recipe", RecipeSchema);
+export default Recipe;

@@ -1,6 +1,6 @@
-const validator = require("validator");
+import validator from "validator";
 
-const validateSignup = ({ email, password, firstName, lastName }) => {
+export const validateSignup = ({ email, password, firstName, lastName }) => {
   if (!firstName || !lastName || !email || !password) {
     throw new Error("There is an empty field!");
   }
@@ -14,6 +14,9 @@ const validateSignup = ({ email, password, firstName, lastName }) => {
   }
 };
 
-module.exports = {
-  validateSignup,
+export const validateUpdatePassword = (password) => {
+  if (!validator.isStrongPassword(password))
+    throw new Error(
+      "Password is not strong enough! (Include uppercase, numbers, and special characters)"
+    );
 };

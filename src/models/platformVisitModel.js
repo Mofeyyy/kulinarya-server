@@ -1,6 +1,5 @@
-const mongoose = require("mongoose");
+import { Schema, model } from "mongoose";
 
-const Schema = mongoose.Schema;
 
 const PlatformVisitSchema = new Schema(
   {
@@ -10,13 +9,11 @@ const PlatformVisitSchema = new Schema(
       required: true,
     },
 
-    // Store Guest Identifier (e.g., IP Address or Session ID)
     byGuest: {
       type: String,
-      default: null,
+      default: "",
     },
 
-    // Store User ID if the visitor is authenticated
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -28,6 +25,7 @@ const PlatformVisitSchema = new Schema(
       default: null,
     },
   },
+
   { timestamps: true }
 );
 
@@ -38,4 +36,5 @@ PlatformVisitSchema.index({ visitType: 1, createdAt: -1 }); // Faster "user vs. 
 PlatformVisitSchema.index({ byUser: 1, createdAt: -1 }); // Quick lookup for user visits
 PlatformVisitSchema.index({ byGuest: 1, createdAt: -1 }); // Quick lookup for guest visits
 
-module.exports = mongoose.model("PlatformVisit", PlatformVisitSchema);
+const PlatformVisit = model("PlatformVisit", PlatformVisitSchema);
+export default PlatformVisit;

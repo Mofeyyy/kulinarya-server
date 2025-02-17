@@ -1,14 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+
+// Imported Controllers
+import {
   trackPostView,
   getPostViews,
-} = require("../controllers/postViewController");
+} from "../controllers/postViewController.js";
 
-// Track a view for a specific recipe (User & Guest)
-router.post("/:recipeId", trackPostView);
+const router = express.Router();
 
-// Get total views for a specific recipe
-router.get("/:recipeId", getPostViews);
+router.post("/", trackPostView); // Track Recipe Views by Users & Guests
+router.get("/:recipeId", getPostViews); // Get Views for a Specific Recipe
 
-module.exports = router;
+export default router;

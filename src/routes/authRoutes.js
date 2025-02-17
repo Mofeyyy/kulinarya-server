@@ -1,15 +1,25 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+
+// Imported Middlewares
+import authenticateUser from "../middleware/authenticateUser.js";
+import resendLimiter from "../middleware/resendLimiter.js";
+
+// Imported Controllers
+import {
   userRegistration,
   emailVerification,
   resendVerificationEmail,
   userLogin,
   userLogout,
-  getUserDetails,
+  getAuthUserDetails,
   forgotPassword,
   resetPassword,
-} = require("../controllers/authController");
+} from "../controllers/authController.js";
+
+const router = express.Router();
+
+// TODO: Put Resend Limiter To Routes
+// TODO: Learn what routes are needed to limit requests
 
 // User Registration
 router.post("/register", userRegistration);
@@ -19,10 +29,10 @@ router.post("/resend-verification", resendVerificationEmail);
 // Login, Logout & User Details Retrieval
 router.post("/login", userLogin);
 router.post("/logout", userLogout);
-router.get("/user-details", getUserDetails);
+router.get("/user-details", authenticateUser, getAuthUserDetails);
 
 // Password Recovery
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", resendLimiter, forgotPassword);
 router.post("/reset-password", resetPassword);
 
-module.exports = router;
+export default router;

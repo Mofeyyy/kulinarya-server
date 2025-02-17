@@ -1,10 +1,11 @@
-const Recipe = require("../models/recipeModel");
-const Moderation = require("../models/moderationModel");
-const User = require("../models/userModel");
+import Recipe from "../models/recipeModel.js";
+import Moderation from "../models/moderationModel.js";
+
 
 // Recipe Management
-const postNewRecipe = async (req, res) => {
+export const postNewRecipe = async (req, res) => {
   try {
+    console.log('Authenticated User:', req.user);  // Log req.user to ensure it's populated
     const {
       title,
       foodCategory,
@@ -15,7 +16,7 @@ const postNewRecipe = async (req, res) => {
       ingredients,
       procedure,
     } = req.body;
-    const byUser = req.user._id;
+    const byUser = req.user.userId;
 
     if (
       !title ||
@@ -59,11 +60,11 @@ const postNewRecipe = async (req, res) => {
   }
 };
 
-const updateRecipe = async (req, res) => {
+export const updateRecipe = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const updates = req.body;
-    const byUser = req.user._id;
+    const byUser = req.user.userId;
 
     const recipe = await Recipe.findById(recipeId).select("byUser");
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
@@ -85,10 +86,10 @@ const updateRecipe = async (req, res) => {
   }
 };
 
-const softDeleteRecipe = async (req, res) => {
+export const softDeleteRecipe = async (req, res) => {
   try {
     const { recipeId } = req.params;
-    const byUser = req.user._id;
+    const byUser = req.user.userId;
 
     const recipe = await Recipe.findById(recipeId);
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
@@ -107,7 +108,7 @@ const softDeleteRecipe = async (req, res) => {
   }
 };
 
-const getAllApprovedRecipes = async (req, res) => {
+export const getAllApprovedRecipes = async (req, res) => {
   try {
     const { page, limit, filter, sortOrder } = extractQueryParams(req.query, {
       status: "approved",
@@ -140,7 +141,7 @@ const getAllApprovedRecipes = async (req, res) => {
 
 
 
-const getRecipeById = async (req, res) => {
+export const getRecipeById = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const recipe = await Recipe.findById(recipeId).populate("byUser", "name");
@@ -152,7 +153,7 @@ const getRecipeById = async (req, res) => {
   }
 };
 
-const getFeaturedRecipes = async (req, res) => {
+export const getFeaturedRecipes = async (req, res) => {
   try {
     const { page, limit, filter, sortOrder } = extractQueryParams(req.query, {
       isFeatured: true,
@@ -179,7 +180,9 @@ const getFeaturedRecipes = async (req, res) => {
   }
 };
 
-const featureRecipe = async (req, res) => {
+
+
+export const featureRecipe = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const recipe = await Recipe.findById(recipeId);
@@ -200,7 +203,7 @@ const featureRecipe = async (req, res) => {
   }
 };
 
-const getPendingRecipes = async (req, res) => {
+export const getPendingRecipes = async (req, res) => {
   try {
     const { page, limit, filter, sortOrder } = extractQueryParams(req.query, {
       status: "pending",
@@ -250,13 +253,5 @@ const extractQueryParams = (query, defaultFilter = {}) => {
 };
 
 
-module.exports = {
-  postNewRecipe,
-  updateRecipe,
-  getAllApprovedRecipes,
-  getRecipeById,
-  getFeaturedRecipes,
-  getPendingRecipes,
-  featureRecipe,
-  softDeleteRecipe,
-};
+
+

@@ -1,11 +1,13 @@
-const express = require("express");
-const { addRecipeReaction, updateRecipeReaction, softDeleteRecipeReaction } = require("../controllers/reactionController");
-const { authMiddleware } = require("../middlewares/authMiddleware"); // ✅ Middleware import
+import express from "express";
+import  { addRecipeReaction, updateRecipeReaction, softDeleteRecipeReaction } from "../controllers/reactionController.js";
+
+// Imported Middlewares
+import authenticateUser from "../middleware/authenticateUser.js";
 
 const router = express.Router();
 
-router.post("/:recipeId", authMiddleware, addRecipeReaction);  // ✅ Authenticated
-router.patch("/:reactionId", authMiddleware, updateRecipeReaction);  // ✅ Authenticated
-router.delete("/:reactionId", authMiddleware, softDeleteRecipeReaction);  // ✅ Authenticated
+router.post("/:recipeId", authenticateUser, addRecipeReaction);  // ✅ Authenticated
+router.patch("/:reactionId", authenticateUser, updateRecipeReaction);  // ✅ Authenticated
+router.delete("/:reactionId", authenticateUser, softDeleteRecipeReaction);  // ✅ Authenticated
 
-module.exports = router;
+export default router

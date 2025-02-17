@@ -1,10 +1,10 @@
-const Reaction = require("../models/reactionModel");
-const Recipe = require("../models/recipeModel");
+import Reaction from "../models/reactionModel.js";
+import Recipe from "../models/recipeModel.js";
 
 /**
  * Add or Update a Recipe Reaction
  */
-const addRecipeReaction = async (req, res) => {
+export const addRecipeReaction = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const { reaction } = req.body;
@@ -41,7 +41,7 @@ const addRecipeReaction = async (req, res) => {
 /**
  * Update a Recipe Reaction
  */
-const updateRecipeReaction = async (req, res) => {
+export const updateRecipeReaction = async (req, res) => {
   try {
     const { reactionId } = req.params;
     const { reaction } = req.body;
@@ -71,7 +71,7 @@ const updateRecipeReaction = async (req, res) => {
 /**
  * Soft Delete a Recipe Reaction
  */
-const softDeleteRecipeReaction = async (req, res) => {
+export const softDeleteRecipeReaction = async (req, res) => {
   try {
     const { reactionId } = req.params;
     const byUser = req.user._id; // ✅ Use authenticated user ID
@@ -93,8 +93,3 @@ const softDeleteRecipeReaction = async (req, res) => {
   }
 };
 
-module.exports = {
-  addRecipeReaction,
-  updateRecipeReaction,
-  softDeleteRecipeReaction
-};

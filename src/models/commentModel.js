@@ -1,6 +1,5 @@
-const mongoose = require("mongoose");
-
-const Schema = mongoose.Schema;
+import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const CommentSchema = new Schema(
   {
@@ -19,7 +18,6 @@ const CommentSchema = new Schema(
     content: {
       type: String,
       required: true,
-      maxlength: 500, // Prevents extremely long comments
     },
 
     deletedAt: {
@@ -31,5 +29,5 @@ const CommentSchema = new Schema(
   { timestamps: true }
 );
 
-// Export the Comment model
-module.exports = mongoose.model("Comment", CommentSchema);
+const Comment = model("Comment", CommentSchema);
+export default Comment;

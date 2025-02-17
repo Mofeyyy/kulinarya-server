@@ -1,24 +1,24 @@
-const Recipe = require("../models/recipeModel");
-const Moderation = require("../models/moderationModel");
-const Notification = require("../models/notificationModel");
-const mongoose = require("mongoose");
+import Recipe from "../models/recipeModel.js";
+import Moderation from "../models/moderationModel.js";
+import Notification from "../models/notificationModel.js";
+import mongoose from "mongoose";
 
 /** 🔹 Utility Function: Find & Validate Recipe by ID */
-const findRecipeById = async (recipeId) => {
+export const findRecipeById = async (recipeId) => {
   const recipe = await Recipe.findById(recipeId);
   if (!recipe) throw new Error("Recipe not found.");
   return recipe;
 };
 
 /** 🔹 Utility Function: Find & Validate Moderation Entry */
-const findModerationEntry = async (recipeId) => {
+export const findModerationEntry = async (recipeId) => {
   const moderationEntry = await Moderation.findOne({ forPost: new mongoose.Types.ObjectId(recipeId) });
   if (!moderationEntry) throw new Error("No moderation entry found for this recipe.");
   return moderationEntry;
 };
 
 /** 🔹 Utility Function: Create a Notification */
-const createNotification = async (userId, content) => {
+export const createNotification = async (userId, content) => {
   return await Notification.create({
     forUser: userId,
     content,
@@ -27,7 +27,7 @@ const createNotification = async (userId, content) => {
 };
 
 /** ✅ Approve/Reject Recipe */
-const moderatePost = async (req, res) => {
+export const moderatePost = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized: User ID is missing." });
@@ -70,7 +70,7 @@ const moderatePost = async (req, res) => {
 };
 
 /** ✅ Update Moderation Decision */
-const updateModeration = async (req, res) => {
+export const updateModeration = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized: User ID is missing." });
@@ -98,7 +98,7 @@ const updateModeration = async (req, res) => {
 };
 
 /** ✅ Soft Delete Moderation Record */
-const softDeleteModeration = async (req, res) => {
+export const softDeleteModeration = async (req, res) => {
   try {
     const { moderationId } = req.params;
 
@@ -116,10 +116,4 @@ const softDeleteModeration = async (req, res) => {
     console.error("Delete Moderation Error:", error.message);
     res.status(500).json({ message: error.message || "Server error" });
   }
-};
-
-module.exports = {
-  moderatePost,
-  updateModeration,
-  softDeleteModeration,
 };

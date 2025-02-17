@@ -1,11 +1,21 @@
-const express = require("express");
+import express from "express";
+
+// Imported Controllers
+import {
+  moderatePost,
+  updateModeration,
+  softDeleteModeration,
+} from "../controllers/moderationController.js";
+
+// Imported Middlewares
+import authenticateUser from "../middleware/authenticateUser.js";
+import checkRole from "../middleware/checkRole.js";
+
 const router = express.Router();
-const { moderatePost, updateModeration, softDeleteModeration } = require("../controllers/moderationController");
-const { authMiddleware, checkRole } = require("../middlewares/authMiddleware");
 
-// Moderation Management (Only Admin & Content Creator)
-router.patch("/:recipeId/moderate", authMiddleware, checkRole(["admin", "creator"]), moderatePost);
-router.patch("/:recipeId/moderation", authMiddleware, checkRole(["admin", "creator"]), updateModeration);
-router.delete("/:moderationId/soft-delete", authMiddleware, checkRole(["admin", "content_creator"]), softDeleteModeration);
+// Moderation Management
+router.patch("/:recipeId/moderate", authenticateUser, checkRole(["admin", "creator"]), moderatePost); // Approve/Reject Recipes
+router.patch("/:recipeId/moderation", authenticateUser, checkRole(["admin", "creator"]), updateModeration); // Update Moderation Decision
+router.delete("/:moderationId/soft-delete", authenticateUser, checkRole(["admin", "creator"]),  softDeleteModeration); // Delete Moderation Record
 
-module.exports = router;
+export default router;

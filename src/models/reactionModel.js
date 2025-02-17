@@ -1,6 +1,5 @@
-const mongoose = require("mongoose");
-
-const Schema = mongoose.Schema;
+import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const ReactionSchema = new Schema(
   {
@@ -31,4 +30,5 @@ const ReactionSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Reaction", ReactionSchema);
+const Reaction = model("Reaction", ReactionSchema);
+export default Reaction;

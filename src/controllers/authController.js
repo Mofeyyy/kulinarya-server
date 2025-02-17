@@ -1,117 +1,92 @@
-const User = require("../models/userModel");
-const sendVerificationEmail = require("../mail/sendVerificationEmail");
-const jwt = require('jsonwebtoken')
-const bcrypt = require("bcrypt");
+import expressAsyncHandler from "express-async-handler";
 
-require("dotenv").config();
+// Imported Models
+import User from "../models/userModel.js";
 
-const userRegistration = async (req, res) => {
-  const { email, password, firstName, lastName, role } = req.body;
+// Imported Functions
+import sendVerificationEmail from "../mail/sendVerificationEmail.js";
+import sendPasswordResetEmail from "../mail/sendPasswordResetEmail.js";
 
-  try {
-    // User Signup Static and store its data on a variable
-    const newUser = await User.signup(email, password, firstName, lastName, role);
+// ---------------------------------------------------------------------------
 
-    // Send Verification Email
-    await sendVerificationEmail(newUser.email, newUser._id);
+export const userRegistration = expressAsyncHandler(async (req, res) => {
+  const { email, password, firstName, lastName } = req.body;
 
-    // Send success response prompting the user to verify its email
-    res
-      .status(201)
-      .json({ message: "Registration successful! Please verify your email."});
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+  const user = await User.signup(email, password, firstName, lastName);
 
-const emailVerification = async (req, res) => {
+  await sendVerificationEmail(user);
+
+  // Generate auth token and store in cookie
+  user.generateAuthToken(res);
+
+  res
+    .status(201)
+    .json({ message: "Registration successful! Please verify your email." });
+});
+
+export const emailVerification = expressAsyncHandler(async (req, res) => {
   // Get token from the url
   const { token } = req.query;
 
-  try {
-    // Verify Email
-    const result = await User.verifyEmail(token);
+  // Verify Email
+  const result = await User.verifyEmail(token);
 
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+  res.status(200).json(result);
+});
 
-const resendVerificationEmail = async (req, res) => {
-  try {
-    const { email } = req.body;
+export const resendVerificationEmail = expressAsyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-    const { userEmail, userId } = await User.resendVerificationEmail(email);
+  const user = await User.resendVerificationEmail(email);
 
-    // Send Verification Email
-    await sendVerificationEmail(userEmail, userId);
+  await sendVerificationEmail(user);
 
-    return res
-      .status(200)
-      .json({ message: "Verification email resent successfully!" });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+  return res
+    .status(200)
+    .json({ message: "Verification email resent successfully!" });
+});
 
-const userLogin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+export const userLogin = expressAsyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid email or password." });
-    }
+  const user = await User.login(email, password);
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password." });
-    }
+  // Generate auth token and store in cookie
+  user.generateAuthToken(res);
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.SECRET, { expiresIn: "1d" });
+  res.status(200).json({ message: "Login Success" });
+});
 
-    // Set HTTP-only cookie
-    res.cookie("token", token, {
-      httpOnly: true, // Prevent access from JavaScript
-      secure: process.env.NODE_ENV === "production", // Secure in production
-      sameSite: "Strict",
-      maxAge: 3600000, // 1 hour
-    });
+export const userLogout = expressAsyncHandler(async (_, res) => {
+  res.clearCookie("kulinarya_auth_token");
+  res.status(200).json({ message: "Logged out successfully" });
+});
 
-    res.status(200).json({ message: "Login successful!", token});
-  } catch (err) {
-    res.status(500).json({ message: "Server error." });
-  }
-  //res.status(200).json({ mssg: "Login Route" });
-};
+export const getAuthUserDetails = expressAsyncHandler(async (req, res) => {
+  const user = await User.getAuthUserDetails(req);
+  res.status(200).json(user);
+});
 
-const userLogout = async (req, res) => {
-  res.status(200).json({ mssg: "Logout Route" });
-};
+export const forgotPassword = expressAsyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-const getUserDetails = async (req, res) => {
-  res.status(200).json({ mssg: "Retrieve User Details Route" });
-};
+  const { user, sendAttempts } = await User.sendPasswordResetEmail(email);
 
-const forgotPassword = async (req, res) => {
-  res.status(200).json({ mssg: "Forgot Password Route" });
-};
+  // Send Password Reset Email
+  await sendPasswordResetEmail(user);
 
-const resetPassword = async (req, res) => {
-  res.status(200).json({ mssg: "Reset Password Route" });
-};
+  return res.status(200).json({
+    message: `Password reset ${
+      sendAttempts > 1 ? "resent" : "sent"
+    } successfully!`,
+  });
+});
 
-module.exports = {
-  userRegistration,
-  emailVerification,
-  resendVerificationEmail,
-  userLogin,
-  userLogout,
-  getUserDetails,
-  forgotPassword,
-  resetPassword,
-};
+export const resetPassword = expressAsyncHandler(async (req, res) => {
+  const { token } = req.query;
+  const { newPassword } = req.body;
+
+  const result = await User.passwordReset(token, newPassword);
+
+  res.status(200).json(result);
+});
