@@ -35,3 +35,4 @@ const AnnouncementSchema = new Schema(
 
 const Announcement = model("Announcement", AnnouncementSchema);
 export default Announcement;
+

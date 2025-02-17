@@ -92,3 +92,4 @@ const RecipeSchema = new Schema(
 
 const Recipe = model("Recipe", RecipeSchema);
 export default Recipe;
+

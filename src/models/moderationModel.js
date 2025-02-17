@@ -37,3 +37,4 @@ const ModerationSchema = new Schema(
 
 const Moderation = model("Moderation", ModerationSchema);
 export default Moderation;
+

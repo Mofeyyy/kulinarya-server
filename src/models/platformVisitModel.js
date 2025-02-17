@@ -37,3 +37,4 @@ PlatformVisitSchema.index({ byGuest: 1, createdAt: -1 }); // Quick lookup for gu
 
 const PlatformVisit = model("PlatformVisit", PlatformVisitSchema);
 export default PlatformVisit;
+
