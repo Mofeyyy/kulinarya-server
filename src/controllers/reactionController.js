@@ -8,7 +8,7 @@ export const addRecipeReaction = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const { reaction } = req.body;
-    const byUser = req.user._id; // ✅ Use authenticated user ID
+    const byUser = req.user.id; // ✅ Use authenticated user ID
 
     // ✅ Check if recipe exists
     const recipeExists = await Recipe.findById(recipeId);
@@ -45,7 +45,7 @@ export const updateRecipeReaction = async (req, res) => {
   try {
     const { reactionId } = req.params;
     const { reaction } = req.body;
-    const byUser = req.user._id; // ✅ Use authenticated user ID
+    const byUser = req.user.id; // ✅ Use authenticated user ID
 
     // ✅ Find reaction by ID and ensure it's made by the same user
     let existingReaction = await Reaction.findOne({ _id: reactionId, byUser });

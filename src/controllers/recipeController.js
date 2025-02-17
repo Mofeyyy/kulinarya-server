@@ -16,7 +16,7 @@ export const postNewRecipe = async (req, res) => {
       ingredients,
       procedure,
     } = req.body;
-    const byUser = req.user.userId;
+    const byUser = req.user.id;
 
     if (
       !title ||
@@ -64,7 +64,7 @@ export const updateRecipe = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const updates = req.body;
-    const byUser = req.user.userId;
+    const byUser = req.user.id;
 
     const recipe = await Recipe.findById(recipeId).select("byUser");
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
@@ -89,7 +89,7 @@ export const updateRecipe = async (req, res) => {
 export const softDeleteRecipe = async (req, res) => {
   try {
     const { recipeId } = req.params;
-    const byUser = req.user.userId;
+    const byUser = req.user.id;
 
     const recipe = await Recipe.findById(recipeId);
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
