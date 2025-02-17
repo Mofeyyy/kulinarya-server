@@ -3,8 +3,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 // Imported Utility Functions
-import { validateSignup, validateUpdatePassword } from "../utils/validators.js";
 import { verifyToken } from "../utils/tokenUtils.js";
+import CustomError from "../utils/customError.js";
+
+// Imported Validation Schema
+import userValidationSchema from "../validations/userValidation.js";
 
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
@@ -67,7 +70,6 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-// TODO: Change this to zod schema
 userSchema.pre("save", async function (next) {
   try {
     // Hash password before saving
@@ -126,53 +128,53 @@ userSchema.statics.signup = async function (
   firstName,
   lastName
 ) {
-  try {
-    // TODO: Change validation to zod schema
-    validateSignup({ email, password, firstName, lastName });
+  // Validate user data
+  userValidationSchema.parse({
+    mode: "register",
+    email,
+    password,
+    firstName,
+    lastName,
+  });
 
-    const isEmailExists = await this.findOne({ email });
+  const isEmailExists = await this.findOne({ email });
 
-    if (isEmailExists) throw Error("Email is already in use!");
+  if (isEmailExists) throw new CustomError("Email is already in use!", 400);
 
-    return await this.create({
-      email,
-      password,
-      firstName,
-      lastName,
-    });
-  } catch (err) {
-    throw new Error(err.message);
-  }
+  return await this.create({
+    email,
+    password,
+    firstName,
+    lastName,
+  });
 };
 
 // Verify Email Static Method
 userSchema.statics.verifyEmail = async function (token) {
-  try {
-    // Verify and decode the token
-    const decodedToken = verifyToken(token);
+  // Verify and decode the token
+  const decodedToken = verifyToken(token);
 
-    const user = await this.findById(decodedToken.userId);
+  const user = await this.findById(decodedToken.userId);
 
-    if (!user) throw new Error("User not found.");
+  if (!user) throw new CustomError("User not found", 404);
 
-    if (user.isEmailVerified) throw new Error("Email is already verified.");
+  if (user.isEmailVerified)
+    throw new CustomError("Email is already verified", 400);
 
-    user.isEmailVerified = true;
-    await user.save();
+  user.isEmailVerified = true;
+  await user.save();
 
-    return { message: "Email verified successfully!" };
-  } catch (err) {
-    throw new Error(err.message || "Error on verification process.");
-  }
+  return { message: "Email verified successfully!" };
 };
 
 // Resend Verification Static Method
 userSchema.statics.resendVerificationEmail = async function (email) {
   const user = await this.findOne({ email });
 
-  if (!user) throw new Error("User not found.");
+  if (!user) throw new CustomError("User not found", 404);
 
-  if (user.isEmailVerified) throw new Error("Email is already verified.");
+  if (user.isEmailVerified)
+    throw new CustomError("Email is already verified", 400);
 
   // Check if resend is allowed
   const { allowed, message } = await ResendAttempt.handleResendAttempt(
@@ -180,19 +182,30 @@ userSchema.statics.resendVerificationEmail = async function (email) {
     "verification"
   );
 
-  if (!allowed) throw new Error(message);
+  if (!allowed) throw new CustomError(message, 400);
 
   return user;
 };
 
 // User Login Static Method
 userSchema.statics.login = async function (email, password) {
+  // Validate user data
+  userValidationSchema.parse({
+    mode: "login",
+    email,
+    password,
+  });
+
   const user = await this.findOne({ email });
 
-  if (!user) throw new Error("User not found!");
+  if (!user) throw new CustomError("User not found", 404);
 
-  const isPasswordMatch = bcrypt.compare(password, user.password);
-  if (!isPasswordMatch) throw new Error("Invalid credentials");
+  console.log(user.password);
+
+  // TODO: Add bcrypt catch error here
+  const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordMatch) throw new CustomError("Password is incorrect", 400);
 
   return user;
 };
@@ -203,7 +216,7 @@ userSchema.statics.getAuthUserDetails = async function (req) {
     "email firstName middleName lastName role"
   ); // Fetch necessary fields
 
-  if (!user) throw new Error("User not found!");
+  if (!user) throw new CustomError("User not found", 404);
 
   return user;
 };
@@ -212,28 +225,28 @@ userSchema.statics.getAuthUserDetails = async function (req) {
 userSchema.statics.sendPasswordResetEmail = async function (email) {
   const user = await this.findOne({ email });
 
-  if (!user) throw new Error("User not found.");
+  if (!user) throw new CustomError("User not found", 404);
 
   // Check if resend is allowed
   const { allowed, attempts, message } =
     await ResendAttempt.handleResendAttempt(user.email, "passwordReset");
 
-  if (!allowed) throw new Error(message);
+  if (!allowed) throw new CustomError(message, 400);
 
   return { user, sendAttempts: attempts };
 };
 
 // Static method for password reset
 userSchema.statics.passwordReset = async function (token, newPassword) {
-  // Check if strong password
-  validateUpdatePassword(newPassword);
+  // Validate user data
+  userValidationSchema.parse({
+    mode: "update",
+    password: newPassword,
+  });
 
   const decodedToken = verifyToken(token);
 
   const user = await this.findById(decodedToken.userId);
-
-  // If no user found in token's userId, it is invalid
-  if (!user) throw new Error("Invalid or expired token");
 
   user.password = newPassword;
   await user.save();

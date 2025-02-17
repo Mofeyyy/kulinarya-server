@@ -19,6 +19,7 @@ import {
 const router = express.Router();
 
 // TODO: Put Resend Limiter To Routes
+// TODO: Learn what routes are needed to limit requests
 
 // User Registration
 router.post("/register", userRegistration);
@@ -32,6 +33,6 @@ router.get("/user-details", authenticateUser, getAuthUserDetails);
 
 // Password Recovery
 router.post("/forgot-password", resendLimiter, forgotPassword);
-router.post("/reset-password", resendLimiter, resetPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;
