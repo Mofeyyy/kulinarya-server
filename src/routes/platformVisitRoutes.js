@@ -1,11 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+
+// Imported Controllers
+import {
   trackVisit,
   getPlatformVisits,
-} = require("../controllers/platformVisitController");
+} from "../controllers/platformVisitController.js";
+
+const router = express.Router();
 
 router.post("/", trackVisit); // Track Guest/User Visits
 router.get("/", getPlatformVisits); // Get Platform Visit Statistics (Admin Dashboard)
 
-module.exports = router;
+export default router;

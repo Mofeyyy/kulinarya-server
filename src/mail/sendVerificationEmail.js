@@ -1,21 +1,17 @@
-// Imported Models
-const User = require("../models/userModel");
-
 // Imported Utility Helper Functions
-const transporter = require("../utils/emailTransporter");
+import transporter from "../utils/emailTransporter.js";
 
-const sendVerificationEmail = async (userEmail, userId) => {
+const sendVerificationEmail = async (user) => {
   try {
-    // Generate Verification Token with 1d expiry
-    const token = User.createToken(userId, "1d");
+    // Generate Verification Token with 1h expiry
+    const token = user.generateToken("emailVerification");
 
-    // Create Verification Link
     const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
     // Send to User Email Address
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: userEmail,
+      to: user.email,
       subject: "Verify Your Email",
       html: `<p>Click the link to verify your email: <a href="${verificationLink}">Verify Email</a></p>`,
     });
@@ -24,4 +20,4 @@ const sendVerificationEmail = async (userEmail, userId) => {
   }
 };
 
-module.exports = sendVerificationEmail;
+export default sendVerificationEmail;

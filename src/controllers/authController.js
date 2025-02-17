@@ -1,83 +1,92 @@
-const User = require("../models/userModel");
-const sendVerificationEmail = require("../mail/sendVerificationEmail");
+import expressAsyncHandler from "express-async-handler";
 
-const userRegistration = async (req, res) => {
+// Imported Models
+import User from "../models/userModel.js";
+
+// Imported Functions
+import sendVerificationEmail from "../mail/sendVerificationEmail.js";
+import sendPasswordResetEmail from "../mail/sendPasswordResetEmail.js";
+
+// ---------------------------------------------------------------------------
+
+export const userRegistration = expressAsyncHandler(async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
 
-  try {
-    // User Signup Static and store its data on a variable
-    const newUser = await User.signup(email, password, firstName, lastName);
+  const user = await User.signup(email, password, firstName, lastName);
 
-    // Send Verification Email
-    await sendVerificationEmail(newUser.email, newUser._id);
+  await sendVerificationEmail(user);
 
-    // Send success response prompting the user to verify its email
-    res
-      .status(201)
-      .json({ message: "Registration successful! Please verify your email." });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+  // Generate auth token and store in cookie
+  user.generateAuthToken(res);
 
-const emailVerification = async (req, res) => {
+  res
+    .status(201)
+    .json({ message: "Registration successful! Please verify your email." });
+});
+
+export const emailVerification = expressAsyncHandler(async (req, res) => {
   // Get token from the url
   const { token } = req.query;
 
-  try {
-    // Verify Email
-    const result = await User.verifyEmail(token);
+  // Verify Email
+  const result = await User.verifyEmail(token);
 
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+  res.status(200).json(result);
+});
 
-const resendVerificationEmail = async (req, res) => {
-  try {
-    const { email } = req.body;
+export const resendVerificationEmail = expressAsyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-    const { userEmail, userId } = await User.resendVerificationEmail(email);
+  const user = await User.resendVerificationEmail(email);
 
-    // Send Verification Email
-    await sendVerificationEmail(userEmail, userId);
+  await sendVerificationEmail(user);
 
-    return res
-      .status(200)
-      .json({ message: "Verification email resent successfully!" });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+  return res
+    .status(200)
+    .json({ message: "Verification email resent successfully!" });
+});
 
-const userLogin = async (req, res) => {
-  res.status(200).json({ mssg: "Login Route" });
-};
+export const userLogin = expressAsyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-const userLogout = async (req, res) => {
-  res.status(200).json({ mssg: "Logout Route" });
-};
+  const user = await User.login(email, password);
 
-const getUserDetails = async (req, res) => {
-  res.status(200).json({ mssg: "Retrieve User Details Route" });
-};
+  // Generate auth token and store in cookie
+  user.generateAuthToken(res);
 
-const forgotPassword = async (req, res) => {
-  res.status(200).json({ mssg: "Forgot Password Route" });
-};
+  res.status(200).json({ message: "Login Success" });
+});
 
-const resetPassword = async (req, res) => {
-  res.status(200).json({ mssg: "Reset Password Route" });
-};
+export const userLogout = expressAsyncHandler(async (_, res) => {
+  res.clearCookie("kulinarya_auth_token");
+  res.status(200).json({ message: "Logged out successfully" });
+});
 
-module.exports = {
-  userRegistration,
-  emailVerification,
-  resendVerificationEmail,
-  userLogin,
-  userLogout,
-  getUserDetails,
-  forgotPassword,
-  resetPassword,
-};
+export const getAuthUserDetails = expressAsyncHandler(async (req, res) => {
+  const user = await User.getAuthUserDetails(req);
+  res.status(200).json(user);
+});
+
+export const forgotPassword = expressAsyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const { user, sendAttempts } = await User.sendPasswordResetEmail(email);
+
+  // Send Password Reset Email
+  await sendPasswordResetEmail(user);
+
+  return res.status(200).json({
+    message: `Password reset ${
+      sendAttempts > 1 ? "resent" : "sent"
+    } successfully!`,
+  });
+});
+
+export const resetPassword = expressAsyncHandler(async (req, res) => {
+  const { token } = req.query;
+  const { newPassword } = req.body;
+
+  const result = await User.passwordReset(token, newPassword);
+
+  res.status(200).json(result);
+});

@@ -1,6 +1,4 @@
-const mongoose = require("mongoose");
-
-const Schema = mongoose.Schema;
+import { Schema, model } from "mongoose";
 
 const PlatformVisitSchema = new Schema(
   {
@@ -35,4 +33,5 @@ const PlatformVisitSchema = new Schema(
 PlatformVisitSchema.index({ byUser: 1, createdAt: -1 });
 PlatformVisitSchema.index({ byGuest: 1, createdAt: -1 });
 
-module.exports = mongoose.model("PlatformVisit", PlatformVisitSchema);
+const PlatformVisit = model("PlatformVisit", PlatformVisitSchema);
+export default PlatformVisit;

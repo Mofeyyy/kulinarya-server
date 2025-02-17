@@ -1,6 +1,4 @@
-const mongoose = require("mongoose");
-
-const Schema = mongoose.Schema;
+import { Schema, model } from "mongoose";
 
 const AnnouncementSchema = new Schema(
   {
@@ -34,4 +32,5 @@ const AnnouncementSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Announcement", AnnouncementSchema);
+const Announcement = model("Announcement", AnnouncementSchema);
+export default Announcement;

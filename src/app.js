@@ -1,12 +1,26 @@
-// Import Express JS
-const express = require("express");
-const app = express();
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 
-// Middlewares - this controls or modify all the requests and responses
+// Imported Routes
+import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import recipeRoutes from "./routes/recipeRoutes.js";
+import moderationRoutes from "./routes/moderationRoutes.js";
+import postViewRoutes from "./routes/postViewRoutes.js";
+import platformVisitRoutes from "./routes/platformVisitRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import announcementRoutes from "./routes/announcementRoutes.js";
+
+// Imported Middlewares
+import errorHandler from "./middleware/errorHandler.js";
+
+const app = express();
 
 app.use(express.json()); // Convert all requests to JSON file
 
-const cors = require("cors");
+app.use(cookieParser()); // Cookie Parser
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -16,46 +30,25 @@ app.use(
   })
 ); // For accessing or allowing backend on a different domain
 
-app.use((req, res, next) => {
+app.use((req, _, next) => {
   console.log(req.path, req.method);
   next();
 }); // Log all requests in console
 
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.send("Backend is running");
 }); // Respond that the backend is running
 
 // Routes
-// Authentication Routes
-const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
-
-// User Routes
-const userRoutes = require("./routes/userRoutes");
 app.use("/api/users", userRoutes);
-
-// Recipe Routes
-const recipeRoutes = require("./routes/recipeRoutes");
 app.use("/api/recipes", recipeRoutes);
-
-// Moderation Routes
-const moderationRoutes = require("./routes/moderationRoutes");
 app.use("/api/moderations", moderationRoutes);
-
-// Post View Routes
-const postViewRoutes = require("./routes/postViewRoutes");
 app.use("/api/post-views", postViewRoutes);
-
-// Platform Routes
-const platformVisitRoutes = require("./routes/platformVisitRoutes");
 app.use("/api/platform-visits", platformVisitRoutes);
-
-// Notifications Routes
-const notificationRoutes = require("./routes/notificationRoutes");
 app.use("/api/notifications", notificationRoutes);
-
-// Announcements Routes
-const announcementRoutes = require("./routes/announcementRoutes");
 app.use("/api/announcements", announcementRoutes);
 
-module.exports = app;
+app.use(errorHandler); // Global Error Handler
+
+export default app;

@@ -1,6 +1,4 @@
-const mongoose = require("mongoose");
-
-const Schema = mongoose.Schema;
+import { Schema, model } from "mongoose";
 
 const ModerationSchema = new Schema(
   {
@@ -36,5 +34,5 @@ const ModerationSchema = new Schema(
   { timestamps: true } // Automatically includes createdAt and updatedAt fields
 );
 
-// Export the Moderation model
-module.exports = mongoose.model("Moderation", ModerationSchema);
+const Moderation = model("Moderation", ModerationSchema);
+export default Moderation;

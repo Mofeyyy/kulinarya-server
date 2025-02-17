@@ -1,6 +1,7 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+
+// Imported Controllers
+import {
   postNewRecipe,
   updateRecipe,
   getAllApprovedRecipes,
@@ -17,7 +18,9 @@ const {
   addRecipeComment,
   updateRecipeComment,
   softDeleteRecipeComment,
-} = require("../controllers/recipeController");
+} from "../controllers/recipeController.js";
+
+const router = express.Router();
 
 // Recipe Management
 router.post("/", postNewRecipe);
@@ -47,4 +50,4 @@ router.post("/:recipeId/comments", addRecipeComment);
 router.patch("/:recipeId/comments/update", updateRecipeComment);
 router.delete("/:recipeId/comments/soft-delete", softDeleteRecipeComment);
 
-module.exports = router;
+export default router;
