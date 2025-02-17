@@ -58,3 +58,4 @@ app.use("/api/announcements", announcementRoutes);
 app.use(errorHandler); // Global Error Handler
 
 export default app;
+
