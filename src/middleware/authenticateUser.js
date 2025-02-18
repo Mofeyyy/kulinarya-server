@@ -7,7 +7,13 @@ export const authenticateUser = async (req, _, next) => {
   if (!token) throw new CustomError("Unauthorized - No token provided", 401);
 
   const decodedToken = verifyToken(token);
-  req.user = decodedToken;
+  
+//   Add role on token generation
+  req.user = {
+    _id: decodedToken.userId,
+    role: decodedToken.role,
+  };
+
   next();
 };
 

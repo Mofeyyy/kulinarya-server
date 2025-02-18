@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import recipeRoutes from "./routes/recipeRoutes.js";
 import reactionRoutes from "./routes/reactionRoutes.js"
+import commentRoutes from "./routes/commentRoutes.js"
 import moderationRoutes from "./routes/moderationRoutes.js";
 import postViewRoutes from "./routes/postViewRoutes.js";
 import platformVisitRoutes from "./routes/platformVisitRoutes.js";
@@ -51,6 +52,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/reactions", reactionRoutes);
+app.use("/api/comments", commentRoutes);
 app.use("/api/moderations", moderationRoutes);
 app.use("/api/post-views", postViewRoutes);
 app.use("/api/platform-visits", platformVisitRoutes);
@@ -60,4 +62,3 @@ app.use("/api/announcements", announcementRoutes);
 app.use(errorHandler); // Global Error Handler
 
 export default app;
-

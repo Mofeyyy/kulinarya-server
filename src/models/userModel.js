@@ -100,7 +100,7 @@ userSchema.pre("save", async function (next) {
 // Generate Auth Token Method
 userSchema.methods.generateAuthToken = function (res) {
   const token = jwt.sign(
-    { userId: this._id, email: this.email },
+    { userId: this._id, email: this.email, role: this.role, },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
