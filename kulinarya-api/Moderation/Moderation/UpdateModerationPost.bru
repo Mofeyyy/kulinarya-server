@@ -1,0 +1,23 @@
+meta {
+  name: UpdateModerationPost
+  type: http
+  seq: 3
+}
+
+patch {
+  url: http:localhost:4000/api/moderations/67b3a088eb4222d5e9315123/moderation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2FlMTUzMThjMzU0OWEyZjEwZjlmNGEiLCJlbWFpbCI6ImpwYXRkdTEyQGdtYWlsLmNvbSIsImlhdCI6MTczOTgyNDQxMywiZXhwIjoxNzQwNDI5MjEzfQ.ZUTD0hrDi0JAMMGKw2BZuMN-PXJlCm5Ref-6JzwAZgs
+}
+
+body:json {
+  {
+    "status": "rejected",
+    "notes": "Invalid Picture!"
+  }
+  
+}

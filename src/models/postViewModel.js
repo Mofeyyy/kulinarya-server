@@ -37,3 +37,4 @@ const PostViewSchema = new Schema(
 
 const PostView = model("PostView", PostViewSchema);
 export default PostView;
+

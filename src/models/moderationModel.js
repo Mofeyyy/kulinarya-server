@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const ModerationSchema = new Schema(
   {
@@ -36,3 +37,4 @@ const ModerationSchema = new Schema(
 
 const Moderation = model("Moderation", ModerationSchema);
 export default Moderation;
+

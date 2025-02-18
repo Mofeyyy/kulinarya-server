@@ -1,0 +1,22 @@
+meta {
+  name: UpdateRecipeReaction
+  type: http
+  seq: 3
+}
+
+patch {
+  url: http://localhost:4000/api/reactions/67b3a1bfc4f510192f0c51c6
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2IzNjQ0OGFlMDAxZjA4OTNlOGMwZDMiLCJlbWFpbCI6ImphaHp6ejIxQGdtYWlsLmNvbSIsImlhdCI6MTczOTgyNTgyMSwiZXhwIjoxNzQwNDMwNjIxfQ.9XVLE8R8dr0X2GHzR0jaV_BJX_sk2gGgI9Ti6LosFgA
+}
+
+body:json {
+  {
+    "reaction": "neutral"
+  }
+  
+}

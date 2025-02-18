@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const AnnouncementSchema = new Schema(
   {
@@ -34,3 +35,4 @@ const AnnouncementSchema = new Schema(
 
 const Announcement = model("Announcement", AnnouncementSchema);
 export default Announcement;
+

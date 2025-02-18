@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const RecipeSchema = new Schema(
   {
@@ -64,6 +65,11 @@ const RecipeSchema = new Schema(
       ], // Check if it is more than one, throw error if not.
     },
 
+    status: {
+      type: String, enum: ["pending", "approved", "rejected"],
+      default: "pending"
+    },
+
     moderationInfo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Moderation",
@@ -86,3 +92,4 @@ const RecipeSchema = new Schema(
 
 const Recipe = model("Recipe", RecipeSchema);
 export default Recipe;
+

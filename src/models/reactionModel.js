@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
 const ReactionSchema = new Schema(
   {
@@ -31,3 +32,4 @@ const ReactionSchema = new Schema(
 
 const Reaction = model("Reaction", ReactionSchema);
 export default Reaction;
+
