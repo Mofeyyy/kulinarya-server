@@ -7,7 +7,10 @@ import { verifyToken } from "../utils/tokenUtils.js";
 import CustomError from "../utils/customError.js";
 
 // Imported Validation Schema
-import userValidationSchema from "../validations/userValidation.js";
+import {
+  registerUserSchema,
+  loginUserSchema,
+} from "../validations/userValidations.js";
 
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
@@ -121,6 +124,7 @@ userSchema.methods.generateToken = function (type) {
   );
 };
 
+// TODO: Retest this method
 // Signup Static Method
 userSchema.statics.signup = async function (
   email,
@@ -129,8 +133,7 @@ userSchema.statics.signup = async function (
   lastName
 ) {
   // Validate user data
-  userValidationSchema.parse({
-    mode: "register",
+  registerUserSchema.parse({
     email,
     password,
     firstName,
@@ -190,8 +193,7 @@ userSchema.statics.resendVerificationEmail = async function (email) {
 // User Login Static Method
 userSchema.statics.login = async function (email, password) {
   // Validate user data
-  userValidationSchema.parse({
-    mode: "login",
+  loginUserSchema.parse({
     email,
     password,
   });
@@ -199,8 +201,6 @@ userSchema.statics.login = async function (email, password) {
   const user = await this.findOne({ email });
 
   if (!user) throw new CustomError("User not found", 404);
-
-  console.log(user.password);
 
   // TODO: Add bcrypt catch error here
   const isPasswordMatch = await bcrypt.compare(password, user.password);
