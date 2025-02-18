@@ -1,7 +1,7 @@
 import express from "express";
 import { addRecipeComment, updateRecipeComment, softDeleteRecipeComment } from "../controllers/commentController.js";
 
-import authenticateUser from "../middleware/authenticateUser.js";
+import { authenticateUser } from "../middleware/authenticateUser.js";
 
 
 const router = express.Router();

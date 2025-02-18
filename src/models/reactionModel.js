@@ -32,10 +32,13 @@ const ReactionSchema = new Schema(
 // 🔹 Static Methods for Reusability
 
 ReactionSchema.statics.extractReactionParams = function (req) {
+  if (!req.user || !req.user._id) {
+    throw new Error("User authentication required");
+  }
   // Extract the necessary parameters from the request
   const { recipeId } = req.params;
   const { reaction } = req.body;
-  const byUser = req.user.id; // Use authenticated user ID
+  const byUser = req.user._id; // Use authenticated user ID
 
   return { recipeId, reaction, byUser };
 };

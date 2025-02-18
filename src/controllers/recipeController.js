@@ -5,13 +5,13 @@ import Moderation from "../models/moderationModel.js";
 // ✅ Create a new recipe
 export const postNewRecipe = async (req, res) => {
   try {
-    const recipeData = { ...req.body, byUser: req.user.id };
+    const recipeData = { ...req.body, byUser: req.user._id };
     const newRecipe = await Recipe.createRecipe(recipeData);
 
     const newModeration = await Moderation.create({
       forPost: newRecipe._id,
       title: newRecipe.title,
-      moderatedBy: req.user.id,
+      moderatedBy: req.user._id,
       status: "pending",
       notes: "Awaiting review",
     });
@@ -28,7 +28,7 @@ export const postNewRecipe = async (req, res) => {
 // ✅ Update a recipe
 export const updateRecipe = async (req, res) => {
   try {
-    const updatedRecipe = await Recipe.updateRecipeById(req.params.recipeId, req.body, req.user.id);
+    const updatedRecipe = await Recipe.updateRecipeById(req.params.recipeId, req.body, req.user._id);
     res.status(200).json({ message: "Recipe updated successfully", recipe: updatedRecipe });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -37,7 +37,7 @@ export const updateRecipe = async (req, res) => {
 
 export const softDeleteRecipe = async (req, res) => {
   try {
-    const recipe = await Recipe.softDeleteRecipeById(req.params.recipeId, req.user.id);
+    const recipe = await Recipe.softDeleteRecipeById(req.params.recipeId, req.user._id);
     res.status(200).json({ message: "Recipe successfully soft deleted", recipe });
   } catch (error) {
     res.status(500).json({ message: error.message });

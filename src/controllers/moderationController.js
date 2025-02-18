@@ -1,29 +1,32 @@
-import Recipe from "../models/recipeModel.js";
 import Moderation from "../models/moderationModel.js";
-import Notification from "../models/notificationModel.js";
-import mongoose from "mongoose";
+
 
 
 /** ✅ Approve/Reject Recipe */
 export const moderatePost = async (req, res) => {
   try {
-    const userId = Moderation.checkUserAuthorization(req);  // Authorization check (refactored to static)
-    
-    // Extract parameters (refactored to static)
+    const userId = Moderation.checkUserAuthorization(req);  
     const { recipeId, status, notes } = Moderation.extractParams(req);
 
-    Moderation.validateStatus(status); // Validate status (refactored to static)
+    Moderation.validateStatus(status); // Validate status
 
-    // Fetch Recipe & Moderation Entry (refactored to static)
+    // Fetch Recipe & Moderation Entry
     const recipe = await Moderation.findRecipeById(recipeId);
     const moderationEntry = await Moderation.findModerationEntry(recipeId);
 
-    // Update Moderation Entry using the static method
+    // ✅ Update Moderation Entry
     await Moderation.updateModerationEntry(moderationEntry, status, notes, userId);
 
-    // Send Notification if Approved
+    // ✅ Also update Recipe status in Recipe Collection
+    recipe.status = status; // Set recipe status to "approved" or "rejected"
+    await recipe.save(); // Save the updated recipe
+
+    // ✅ Send Notification if Approved
     if (status === "approved") {
-      await Moderation.createNotification(recipe.byUser, `Your recipe "${recipe.title}" has been approved! 🎉`);
+      await Moderation.createNotification(
+        recipe.byUser, 
+        `Your recipe "${recipe.title}" has been approved! 🎉`
+      );
     }
 
     res.status(200).json({ message: `Recipe ${status}.`, recipe });

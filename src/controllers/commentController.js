@@ -1,11 +1,13 @@
 import Comment from "../models/commentModel.js";  // Import Comment model
+import mongoose from "mongoose";
 
 // Add a comment to a recipe
 export const addRecipeComment = async (req, res) => {
   try {
     const { content, fromPost } = req.body;
+
     const newComment = await Comment.create({
-      fromPost,
+      fromPost: new mongoose.Types.ObjectId(fromPost),
       byUser: req.user._id,
       content,
     });
