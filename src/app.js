@@ -44,6 +44,8 @@ app.get("/", (_, res) => {
   res.send("Backend is running");
 }); // Respond that the backend is running
 
+// TODO: Put Request Limiters Soon Per Routes
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
