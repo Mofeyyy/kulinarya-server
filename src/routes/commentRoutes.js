@@ -1,11 +1,13 @@
-const express = require("express");
-const { addRecipeComment, updateRecipeComment, softDeleteRecipeComment } = require("../controllers/commentController");
-const verifyToken = require("../utils/tokenUtils");
+import express from "express";
+import { addRecipeComment, updateRecipeComment, softDeleteRecipeComment } from "../controllers/commentController.js";
+
+import authenticateUser from "../middleware/authenticateUser.js";
+
 
 const router = express.Router();
 
-router.post("/:recipeId", verifyToken, addRecipeComment);
-router.put("/:commentId", verifyToken, updateRecipeComment);
-router.delete("/:commentId", verifyToken, softDeleteRecipeComment);
+router.post("/:recipeId", authenticateUser, addRecipeComment);
+router.patch("/:commentId", authenticateUser, updateRecipeComment);
+router.delete("/:commentId/soft-delete", authenticateUser, softDeleteRecipeComment);
 
-module.exports = router;
+export default router;

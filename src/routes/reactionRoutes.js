@@ -8,6 +8,6 @@ const router = express.Router();
 
 router.post("/:recipeId", authenticateUser, addRecipeReaction);  // ✅ Authenticated
 router.patch("/:reactionId", authenticateUser, updateRecipeReaction);  // ✅ Authenticated
-router.delete("/:reactionId", authenticateUser, softDeleteRecipeReaction);  // ✅ Authenticated
+router.delete("/:reactionId/soft-delete", authenticateUser, softDeleteRecipeReaction);  // ✅ Authenticated
 
 export default router

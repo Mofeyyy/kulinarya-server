@@ -11,26 +11,14 @@ export const authenticateUser = async (req, res, next) => {
     token = req.headers.authorization.split(" ")[1];  // Extract token from "Bearer <token>"
   }
 
-    if (!token)
-      return res
-        .status(401)
-        .json({ message: "Unauthorized - No token provided" });
+  if (!token) throw new CustomError("Unauthorized - No token provided", 401);
 
-    try {
       const decodedToken = verifyToken(token);
       req.user = decodedToken; // Attach user info in token to request object
       const user = await User.findById(decodedToken.userId); // Ensure you have the user in the DB
 
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-
     req.user = user; // Add user data to request
-      
-
       next(); // Continue to next middleware
-    } catch (err) {
-      res.status(401).json({ message: err.message });
-    }
-  
 };
 
   export default authenticateUser;

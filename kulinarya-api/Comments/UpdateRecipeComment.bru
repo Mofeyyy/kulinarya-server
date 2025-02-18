@@ -1,0 +1,21 @@
+meta {
+  name: UpdateRecipeComment
+  type: http
+  seq: 3
+}
+
+patch {
+  url: http://localhost:4000/api/comments/67b42c1d2fff274471da0672
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2FlMTUzMThjMzU0OWEyZjEwZjlmNGEiLCJlbWFpbCI6ImpwYXRkdTEyQGdtYWlsLmNvbSIsImlhdCI6MTczOTg2MjA4NSwiZXhwIjoxNzQwNDY2ODg1fQ.wonqsEuJb8MnGryPmjXlc-1E3XeSD_XQdXhdJ-KCytI
+}
+
+body:json {
+  {
+    "content": "i'll try this. yummy"
+  }
+}

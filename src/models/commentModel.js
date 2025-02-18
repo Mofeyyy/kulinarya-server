@@ -25,10 +25,23 @@ const CommentSchema = new Schema(
       default: null,
     },
   },
-
   { timestamps: true }
 );
 
+// Static method to find and check if a comment exists
+CommentSchema.statics.findAndCheckOwnership = async function (commentId, userId) {
+  const comment = await this.findOne({ _id: commentId, byUser: userId, deletedAt: null });
+  if (!comment) throw new Error("Comment not found or user not authorized");
+  return comment;
+};
+
+// Static method to handle soft deletion of comment
+CommentSchema.statics.softDeleteComment = async function (commentId, userId) {
+  const comment = await this.findAndCheckOwnership(commentId, userId);
+  comment.deletedAt = new Date();
+  await comment.save();
+  return comment;
+};
+
 const Comment = model("Comment", CommentSchema);
 export default Comment;
-
