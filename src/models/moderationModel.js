@@ -1,7 +1,18 @@
 import { Schema, model } from "mongoose";
 import mongoose from "mongoose";
+
+// Imported Models
 import Recipe from "./recipeModel.js";
 import Notification from "./notificationModel.js";
+
+// Imported Validations
+import {
+  createModerationSchema,
+  updateModerationSchema,
+} from "../validations/moderationValidations.js";
+
+// Imported Utility
+import CustomError from "../utils/customError.js";
 
 const ModerationSchema = new Schema(
   {
@@ -11,21 +22,16 @@ const ModerationSchema = new Schema(
       required: true,
     },
 
-    title: {
-      type: String,
-      required: true,
-    },
-
     moderatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
 
     status: {
       type: String,
       enum: ["approved", "pending", "rejected"],
-      required: true,
+      default: "pending",
     },
 
     notes: {
@@ -39,7 +45,7 @@ const ModerationSchema = new Schema(
     },
   },
 
-  { timestamps: true } // Automatically includes createdAt and updatedAt fields
+  { timestamps: true }
 );
 
 ModerationSchema.statics = {
@@ -67,8 +73,11 @@ ModerationSchema.statics = {
 
   // 🔹 Static Method: Find & Validate Moderation Entry
   async findModerationEntry(recipeId) {
-    const moderationEntry = await this.findOne({ forPost: new mongoose.Types.ObjectId(recipeId) });
-    if (!moderationEntry) throw new Error("No moderation entry found for this recipe.");
+    const moderationEntry = await this.findOne({
+      forPost: new mongoose.Types.ObjectId(recipeId),
+    });
+    if (!moderationEntry)
+      throw new Error("No moderation entry found for this recipe.");
     return moderationEntry;
   },
 
@@ -104,7 +113,23 @@ ModerationSchema.statics = {
 
     moderationEntry.deletedAt = new Date();
     await moderationEntry.save();
-  }
+  },
+
+  // * Create New Moderation
+  async createModeration(recipeId) {
+    createModerationSchema.parse({ forPost: recipeId });
+
+    const moderationExists = await this.findOne({ forPost: recipeId });
+
+    if (moderationExists)
+      throw new CustomError("Moderation already exists for this recipe.", 400);
+
+    const newModeration = await this.create({
+      forPost: recipeId,
+    });
+
+    return newModeration;
+  },
 };
 
 const Moderation = model("Moderation", ModerationSchema);

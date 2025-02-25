@@ -1,10 +1,14 @@
-export const checkRole = (allowedRoles) => async (req, res, next) => {
-  console.log(req.user); // Log the user object
+import expressAsyncHandler from "express-async-handler";
+import CustomError from "../utils/customError.js";
 
-  if (!allowedRoles.includes(req.user.role)) {
-    return res.status(403).json({ message: "Unauthorized. Access restricted to specific roles." });
-  }
-  next();
-};
+export const checkRole = (allowedRoles) =>
+  expressAsyncHandler(async (req, _, next) => {
+    if (!req.user || !req.user.role) throw new CustomError("Unauthorized", 401);
 
-export default checkRole
+    if (!allowedRoles.includes(req.user.role))
+      throw new CustomError("Unauthorized, Access restricted", 403);
+
+    next();
+  });
+
+export default checkRole;

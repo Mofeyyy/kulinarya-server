@@ -1,121 +1,107 @@
+import expressAsyncHandler from "express-async-handler";
+
+// Imported Models
 import Recipe from "../models/recipeModel.js";
-import Moderation from "../models/moderationModel.js";
 
+export const postNewRecipe = expressAsyncHandler(async (req, res) => {
+  const recipeData = { ...req.body, byUser: req.user.userId };
 
-// ✅ Create a new recipe
-export const postNewRecipe = async (req, res) => {
-  try {
-    const recipeData = { ...req.body, byUser: req.user._id };
-    const newRecipe = await Recipe.createRecipe(recipeData);
+  const result = await Recipe.createRecipe(recipeData);
 
-    const newModeration = await Moderation.create({
-      forPost: newRecipe._id,
-      title: newRecipe.title,
-      moderatedBy: req.user._id,
-      status: "pending",
-      notes: "Awaiting review",
+  res.status(201).json({
+    success: true,
+    statusCode: 201,
+    message: "Recipe Submitted For Moderation",
+    result,
+  });
+});
+
+export const updateRecipe = expressAsyncHandler(async (req, res) => {
+  const result = await Recipe.updateRecipe(
+    req.params.recipeId,
+    req.body,
+    req.user.userId
+  );
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe successfully updated",
+    result,
+  });
+});
+
+export const softDeleteRecipe = expressAsyncHandler(async (req, res) => {
+  const result = await Recipe.softDeleteRecipe(
+    req.params.recipeId,
+    req.user.userId
+  );
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe successfully deleted",
+    result,
+  });
+});
+
+export const getAllApprovedRecipes = expressAsyncHandler(async (req, res) => {
+  const result = await Recipe.getApprovedRecipes(req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Approved Recipes Fetched Succesfully",
+    ...result,
+  });
+});
+
+export const getPendingRecipes = expressAsyncHandler(async (req, res) => {
+  const result = await Recipe.getPendingRecipes(req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Pending Recipes Fetched Succesfully",
+    ...result,
+  });
+});
+
+export const getRecipeById = expressAsyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  const recipe = await Recipe.getRecipeById(recipeId);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe Fetched Successfully",
+    recipe,
+  });
+});
+
+export const featureRecipe = expressAsyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  const featuredRecipe = await Recipe.featureRecipe(recipeId);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe Successfully Featured.",
+    recipe: featuredRecipe,
+  });
+});
+
+export const getFeaturedRecipes = expressAsyncHandler(async (req, res) => {
+  const result = await Recipe.getFeaturedRecipes(req.query);
+
+  res
+    .status(200)
+    .json({
+      success: true,
+      statusCode: 200,
+      message: "Featured Recipes Fetched Successfully",
+      ...result,
     });
-
-    newRecipe.moderationInfo = newModeration._id;
-    await newRecipe.save();
-
-    res.status(201).json({ message: "Recipe submitted for moderation.", recipe: newRecipe });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// ✅ Update a recipe
-export const updateRecipe = async (req, res) => {
-  try {
-    const updatedRecipe = await Recipe.updateRecipeById(req.params.recipeId, req.body, req.user._id);
-    res.status(200).json({ message: "Recipe updated successfully", recipe: updatedRecipe });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const softDeleteRecipe = async (req, res) => {
-  try {
-    const recipe = await Recipe.softDeleteRecipeById(req.params.recipeId, req.user._id);
-    res.status(200).json({ message: "Recipe successfully soft deleted", recipe });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getAllApprovedRecipes = async (req, res) => {
-  try {
-    const result = await Recipe.getApprovedRecipes(req.query);
-    res.status(200).json({ success: true, ...result });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-
-export const getRecipeById = async (req, res) => {
-  try {
-    const recipe = await Recipe.getRecipeById(req.params.recipeId);
-    if (!recipe) return res.status(404).json({ message: "Recipe not found" });
-    res.status(200).json(recipe);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getFeaturedRecipes = async (req, res) => {
-  try {
-    const result = await Recipe.getFeaturedRecipes(req.query);
-    res.status(200).json({ success: true, ...result });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-
-export const featureRecipe = async (req, res) => {
-  try {
-    const featuredRecipe = await Recipe.featureRecipeById(req.params.recipeId);
-    res.status(200).json({ message: "Recipe successfully featured.", recipe: featuredRecipe });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getPendingRecipes = async (req, res) => {
-  try {
-    const result = await Recipe.getPendingRecipes(req.query);
-    res.status(200).json({ success: true, ...result });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const extractQueryParams = (query, defaultFilter = {}) => {
-  const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 10;
-  const sortOrder = query.sortOrder === "asc" ? { createdAt: 1 } : { createdAt: -1 };
-
-  // ✅ Start with default filter instead of forcing "approved"
-  const filter = { ...defaultFilter };
-
-  if (query.title) filter.title = { $regex: query.title, $options: "i" }; // Case-insensitive title search
-  if (query.category) {
-    filter["foodCategory"] = { $regex: new RegExp(query.category, "i") }; // Adjust field name
-  }
-  if (query.origin) {
-    filter["originProvince"] = { $regex: new RegExp(query.origin, "i") }; // Adjust field name
-  }
-
-  // ✅ Ensure only non-deleted recipes are fetched
-  filter.$or = [{ deletedAt: null }, { deletedAt: { $exists: false } }];
-
-  return { page, limit, filter, sortOrder };
-};
-
-
-
-
+});

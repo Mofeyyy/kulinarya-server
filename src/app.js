@@ -1,17 +1,14 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-
 import dotenv from "dotenv";
-dotenv.config();
-
 
 // Imported Routes
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import recipeRoutes from "./routes/recipeRoutes.js";
-import reactionRoutes from "./routes/reactionRoutes.js"
-import commentRoutes from "./routes/commentRoutes.js"
+import reactionRoutes from "./routes/reactionRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
 import moderationRoutes from "./routes/moderationRoutes.js";
 import postViewRoutes from "./routes/postViewRoutes.js";
 import platformVisitRoutes from "./routes/platformVisitRoutes.js";
@@ -21,7 +18,11 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 // Imported Middlewares
 import errorHandler from "./middleware/errorHandler.js";
 
+// ! --------------------------------------------------------------- !
+
 const app = express();
+
+dotenv.config();
 
 app.use(express.json()); // Convert all requests to JSON file
 
