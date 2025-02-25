@@ -11,8 +11,6 @@ export const authenticateUser = expressAsyncHandler(async (req, _, next) => {
 
   req.user = decodedToken;
 
-  console.log(req.user);
-
   next();
 });
 
