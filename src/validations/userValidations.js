@@ -7,7 +7,8 @@ const userBaseSchema = z.object({
     .trim()
     .toLowerCase()
     .email("Invalid email address")
-    .required("Email is required"),
+    .min(1, "Email is required"),
+
   password: z
     .string()
     .min(8, "Password must be at least 8 characters long")
@@ -19,17 +20,14 @@ const userBaseSchema = z.object({
       /[^a-zA-Z0-9]/,
       "Password must contain at least one special character"
     )
-    .required("Password is required"),
+    .trim(),
+
   firstName: z
     .string()
     .trim()
-    .min(2, "First name must be at least 2 characters")
-    .required("First name is required"),
-  lastName: z
-    .string()
-    .trim()
-    .min(2, "Last name must be at least 2 characters")
-    .required("Last name is required"),
+    .min(2, "First name must be at least 2 characters"),
+
+  lastName: z.string().trim().min(2, "Last name must be at least 2 characters"),
 });
 
 // User Registration

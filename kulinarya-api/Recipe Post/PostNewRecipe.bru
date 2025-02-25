@@ -7,39 +7,45 @@ meta {
 post {
   url: http://localhost:4000/api/recipes
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2FlMTUzMThjMzU0OWEyZjEwZjlmNGEiLCJlbWFpbCI6ImpwYXRkdTEyQGdtYWlsLmNvbSIsImlhdCI6MTczOTgyNDQxMywiZXhwIjoxNzQwNDI5MjEzfQ.ZUTD0hrDi0JAMMGKw2BZuMN-PXJlCm5Ref-6JzwAZgs
+  auth: none
 }
 
 body:json {
   {
-    "title": "Sinigang na yowyow",
+    "title": "Sinigang na Baboy",
     "foodCategory": "dishes",
     "originProvince": "Tarlac",
     "pictureUrl": "https://example.com/sinigang.jpg",
     "videoUrl": "https://example.com/sinigang.mp4",
     "description": "A classic Filipino dish made with sampalok.",
     "ingredients": [
-      "1 kg pork ribs",
-      "1/4 cup sampalok",
-      "5 tomato"
+      {
+        "quantity": 1,
+        "unit": "kg",
+        "name": "Pork Ribs"
+      },
+      {
+        "quantity": 1,
+        "unit": "cup",
+        "name": "Sampalok"
+      },
+      {
+        "quantity": 5,
+        "unit": "pcs",
+        "name": "Tomato"
+      }
     ],
     "procedure": [
       {
         "stepNumber": 1,
-        "content": "Marinate chicken with soy sauce and garlic for 30 minutes."
+        "content": "Boil pork ribs in water until tender."
       },
       {
         "stepNumber": 2,
-        "content": "Simmer with vinegar and water for 20 minutes."
+        "content": "Add sampalok, tomatoes, and season with salt and fish sauce."
       }
     ]
-    
   }
-  
 }
 
 docs {

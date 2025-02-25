@@ -1,6 +1,22 @@
 import { Schema, model } from "mongoose";
 import mongoose from "mongoose";
 
+// Imported Models
+import Moderation from "./moderationModel.js";
+
+// Imported Validations
+import {
+  createRecipeSchema,
+  updateRecipeSchema,
+} from "../validations/recipeValidations.js";
+
+// Imported Utilities
+import CustomError from "../utils/customError.js";
+import { validateObjectId } from "../utils/validators.js";
+
+// Imported Aggregation Pipelines
+import { recipeAggregationPipeline } from "../utils/aggregationPipelines.js";
+
 const RecipeSchema = new Schema(
   {
     byUser: {
@@ -41,7 +57,14 @@ const RecipeSchema = new Schema(
     },
 
     ingredients: {
-      type: [String],
+      type: [
+        {
+          quantity: { type: Number },
+          unit: { type: String },
+          name: { type: String, required: true },
+          notes: { type: String },
+        },
+      ],
       required: true,
     },
 
@@ -52,13 +75,7 @@ const RecipeSchema = new Schema(
           content: { type: String, required: true },
         },
       ],
-      validate: [(arr) => arr.length > 0, "Procedure must have at least one step."],
-    },
-
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      required: true,
     },
 
     moderationInfo: {
@@ -80,103 +97,246 @@ const RecipeSchema = new Schema(
   { timestamps: true }
 );
 
-// 🔹 Static Methods for Reusability
+// Extract Query Params
+RecipeSchema.statics.extractQueryParams = function (query) {
+  // Ensure that the page number is not less than 1 and the content limit is not less than 1 and greater than 100
+  const page = Number.isNaN(Number(query.page))
+    ? 1
+    : Math.max(1, Number(query.page));
 
-// Utility to extract query parameters
-RecipeSchema.statics.extractQueryParams = function (query, defaultFilter = {}) {
-  const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 10;
-  const sortOrder = query.sortOrder === "asc" ? { createdAt: 1 } : { createdAt: -1 };
-  const filter = { ...defaultFilter };
+  const limit = Number.isNaN(Number(query.limit))
+    ? 10
+    : Math.min(Math.max(1, Number(query.limit)), 100);
 
-  if (query.title) filter.title = { $regex: query.title, $options: "i" };
-  if (query.category) filter.foodCategory = { $regex: new RegExp(query.category, "i") };
-  if (query.origin) filter.originProvince = { $regex: new RegExp(query.origin, "i") };
+  // Sort Order
+  const sortOrder =
+    query.sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
 
-  filter.$or = [{ deletedAt: null }, { deletedAt: { $exists: false } }];
+  // Filter Values
+  const filter = {};
 
-  return { page, limit, filter, sortOrder };
+  // Search Filter
+  const searchConditions = [];
+  if (query.search?.trim()) {
+    const safeSearch = query.search
+      .trim()
+      .replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"); // Escape special characters
+
+    searchConditions.push(
+      { title: { $regex: new RegExp(safeSearch, "i") } },
+      { description: { $regex: new RegExp(safeSearch, "i") } }
+    );
+  }
+
+  // Category & Origin Filters
+  if (query.category?.trim())
+    filter.foodCategory = { $regex: new RegExp(query.category.trim(), "i") };
+
+  if (query.origin?.trim())
+    filter.origin = { $regex: new RegExp(query.origin.trim(), "i") };
+
+  // Exclude Deleted Recipes
+  searchConditions.push({ deletedAt: null }, { deletedAt: { $exists: false } });
+
+  // Merge Search & Exclude Deleted Filters
+  if (searchConditions.length) filter.$or = searchConditions;
+
+  return { page, limit, sortOrder, filter };
 };
 
 // Create Recipe
-RecipeSchema.statics.createRecipe = async function (data) {
-  return await this.create(data);
+RecipeSchema.statics.createRecipe = async function (recipeData) {
+  createRecipeSchema.parse(recipeData);
+
+  const newRecipe = await this.create(recipeData);
+
+  const newModeration = await Moderation.createModeration(
+    newRecipe._id.toString()
+  );
+
+  newRecipe.moderationInfo = newModeration._id;
+  await newRecipe.save();
+
+  return { message: "Recipe Submitted For Moderation", recipe: newRecipe };
 };
 
-// Find and update Recipe
-RecipeSchema.statics.updateRecipeById = async function (recipeId, updates, userId) {
-  const recipe = await this.findById(recipeId).select("byUser");
-  if (!recipe) throw new Error("Recipe not found");
-  if (recipe.byUser.toString() !== userId) throw new Error("Unauthorized");
+//  Find and update Recipe
+RecipeSchema.statics.updateRecipe = async function (recipeId, updates, userId) {
+  updateRecipeSchema.parse(updates);
+  validateObjectId(recipeId, "Recipe");
 
-  return await this.findByIdAndUpdate(recipeId, updates, { new: true, runValidators: true });
+  const updatedRecipe = await this.findOneAndUpdate(
+    {
+      _id: recipeId,
+      byUser: userId,
+      $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+    },
+    updates,
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedRecipe) {
+    const existingRecipe = await this.findOne({ _id: recipeId })
+      .select("deletedAt")
+      .lean();
+
+    if (!existingRecipe) throw new CustomError("Recipe Not Found!", 404);
+
+    if (existingRecipe.deletedAt)
+      throw new CustomError("Recipe has been deleted", 403);
+
+    throw new CustomError("Unauthorized", 401);
+  }
+
+  return { message: "Recipe successfully updated", recipe: updatedRecipe };
 };
 
 // Soft Delete Recipe
-RecipeSchema.statics.softDeleteRecipeById = async function (recipeId, userId) {
-  const recipe = await this.findById(recipeId);
-  if (!recipe) throw new Error("Recipe not found");
-  if (recipe.byUser.toString() !== userId) throw new Error("Unauthorized");
+RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
+  validateObjectId(recipeId, "Recipe");
+
+  const recipe = await this.findOne({ _id: recipeId });
+
+  if (!recipe) throw new CustomError("Recipe Not Found!", 404);
+
+  if (recipe.byUser.toString() !== userId)
+    throw new CustomError("Unauthorized", 401);
+
+  if (recipe.deletedAt) throw new CustomError("Recipe already deleted", 400);
 
   recipe.deletedAt = new Date();
-  return await recipe.save();
+
+  await recipe.save();
+
+  return { message: "Recipe successfully deleted", recipe };
 };
 
 // Get Approved Recipes
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
-  const { page, limit, filter, sortOrder } = this.extractQueryParams(query, { status: "approved" });
+  const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
-  const recipes = await this.find(filter)
-    .populate("byUser", "name")
-    .sort(sortOrder)
-    .skip((page - 1) * limit)
-    .limit(limit);
+  // Count approved recipes
+  const approvedRecipeCount = await this.aggregate([
+    ...recipeAggregationPipeline(filter, {
+      "moderationInfo.status": "approved",
+    }),
 
-  const totalRecipes = await this.countDocuments(filter);
-  return { recipes, totalRecipes, page, limit };
+    { $count: "total" },
+  ]);
+
+  const totalApprovedRecipes = approvedRecipeCount[0]?.total || 0;
+
+  // Fetch recipes data
+  const approvedRecipesData = await this.aggregate([
+    ...recipeAggregationPipeline(filter, {
+      "moderationInfo.status": "approved",
+    }),
+
+    { $sort: { ...sortOrder } },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+  ]);
+
+  return { approvedRecipesData, totalApprovedRecipes, page, limit };
 };
 
-// Get Pending Recipes
+// Get Pending Recipes - For Moderating in Admin Panel
 RecipeSchema.statics.getPendingRecipes = async function (query) {
-  const { page, limit, filter, sortOrder } = this.extractQueryParams(query, { status: "pending" });
+  const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
-  const recipes = await this.find(filter)
-    .populate("byUser", "name")
-    .sort(sortOrder)
-    .skip((page - 1) * limit)
-    .limit(limit);
+  // Count pending recipes
+  const pendingRecipeCount = await this.aggregate([
+    ...recipeAggregationPipeline(filter, {
+      "moderationInfo.status": "pending",
+    }),
 
-  const totalRecipes = await this.countDocuments(filter);
-  return { recipes, totalRecipes, page, limit };
+    { $count: "total" },
+  ]);
+
+  const totalPendingRecipes = pendingRecipeCount[0]?.total || 0;
+
+  // Fetch recipes data
+  const pendingRecipesData = await this.aggregate([
+    ...recipeAggregationPipeline(filter, {
+      "moderationInfo.status": "pending",
+    }),
+
+    { $sort: { ...sortOrder } },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+  ]);
+
+  return { pendingRecipesData, totalPendingRecipes, page, limit };
 };
 
-// Get Recipe by ID
+// Get Recipe by ID - For Viewing in Recipe Viewing Page
 RecipeSchema.statics.getRecipeById = async function (recipeId) {
-  return await this.findById(recipeId).populate("byUser", "name");
+  validateObjectId(recipeId, "Recipe");
+
+  const recipe = await this.findOne({ _id: recipeId })
+    .populate("byUser", "firstName middleName lastName")
+    .lean();
+
+  if (!recipe) throw new CustomError("Recipe not found", 404);
+
+  if (recipe.deletedAt)
+    throw new CustomError("Recipe has already been deleted", 404);
+
+  return recipe;
 };
 
 // Feature Recipe
-RecipeSchema.statics.featureRecipeById = async function (recipeId) {
-  const recipe = await this.findById(recipeId);
-  if (!recipe) throw new Error("Recipe not found");
-  if (recipe.status !== "approved") throw new Error("Only approved recipes can be featured");
+// ? How about unfeaturing a recipe, address this soon when implemented on front end
+// ? Can I do this as a toggle instead soon
+RecipeSchema.statics.featureRecipe = async function (recipeId) {
+  validateObjectId(recipeId, "Recipe");
+
+  const recipe = await this.findOne({ _id: recipeId }).populate(
+    "moderationInfo",
+    "status"
+  );
+
+  if (!recipe) throw new CustomError("Recipe not found", 404);
+
+  if (recipe.moderationInfo.status !== "approved")
+    throw new CustomError("Only approved recipes can be featured", 400);
+
+  if (recipe.isFeatured)
+    throw new CustomError("Recipe is already featured", 400);
 
   recipe.isFeatured = true;
+
   return await recipe.save();
 };
 
 // Get Featured Recipes
 RecipeSchema.statics.getFeaturedRecipes = async function (query) {
-  const { page, limit, filter, sortOrder } = this.extractQueryParams(query, { isFeatured: true });
+  const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
-  const recipes = await this.find(filter)
-    .populate("byUser", "name")
-    .sort(sortOrder)
-    .skip((page - 1) * limit)
-    .limit(limit);
+  // Count featured recipes
+  const featuredRecipeCount = this.aggregate([
+    ...recipeAggregationPipeline(filter, {
+      "moderationInfo.status": "approved",
+      isFeatured: true,
+    }),
 
-  const totalRecipes = await this.countDocuments(filter);
-  return { recipes, totalRecipes, page, limit };
+    { $count: "total" },
+  ]);
+
+  const totalFeaturedRecipes = featuredRecipeCount[0]?.total || 0;
+
+  const featuredRecipesData = await this.aggregate([
+    ...recipeAggregationPipeline(filter, {
+      "moderationInfo.status": "approved",
+      isFeatured: true,
+    }),
+
+    { $sort: { ...sortOrder } },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+  ]);
+
+  return { featuredRecipesData, totalFeaturedRecipes, page, limit };
 };
 
 const Recipe = model("Recipe", RecipeSchema);
