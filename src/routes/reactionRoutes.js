@@ -7,7 +7,7 @@ import authenticateUser from "../middleware/authenticateUser.js";
 const router = express.Router();
 
 router.post("/:recipeId", authenticateUser, addRecipeReaction);  // ✅ Authenticated
-router.patch("/:reactionId", authenticateUser, updateRecipeReaction);  // ✅ Authenticated
+router.patch("/:reactionId", authenticateUser, updateRecipeReaction)
 router.delete("/:reactionId/soft-delete", authenticateUser, softDeleteRecipeReaction);  // ✅ Authenticated
 
 export default router

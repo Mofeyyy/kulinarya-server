@@ -1,60 +1,32 @@
 import Reaction from "../models/reactionModel.js";
-import Recipe from "../models/recipeModel.js";
+import expressAsyncHandler from "express-async-handler";
 
-/**
- * Add or Update a Recipe Reaction
- */
-export const addRecipeReaction = async (req, res) => {
-  try {
-    const { recipeId, reaction, byUser } = await Reaction.extractReactionParams(req);
+// ✅ Add Reaction
+export const addRecipeReaction = expressAsyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+  const { reaction } = req.body;
+  const userId = req.user._id;
 
-    // Check if recipe exists
-    const recipeExists = await Recipe.findById(recipeId);
-    if (!recipeExists) {
-      return res.status(404).json({ message: "Recipe not found." });
-    }
+  const result = await Reaction.addReaction(userId, recipeId, reaction);
+  res.status(201).json({ message: "Reaction added/updated successfully", result });
+});
 
-    // Handle reaction (either create or update based on existing)
-    const updatedReaction = await Reaction.handleReaction(recipeId, byUser, reaction);
+// ✅ Update Reaction
+export const updateRecipeReaction = expressAsyncHandler(async (req, res) => {
+  const { reactionId } = req.params;
+  const newReactionType = req.body.reaction;
+  const userId = req.user._id;
 
-    return res.status(updatedReaction._id ? 200 : 201).json({
-      message: updatedReaction._id ? "Reaction updated" : "Reaction added",
-      reaction: updatedReaction,
-    });
-  } catch (error) {
-    console.error("Add Reaction Error:", error);
-    res.status(500).json({ message: "Server error", error });
-  }
-};
+  const updatedReaction = await Reaction.updateReactionType(reactionId, newReactionType, userId);
 
-/**
- * Update a Recipe Reaction
- */
-export const updateRecipeReaction = async (req, res) => {
-  try {
-    const { reactionId } = req.params;
-    const { reaction, byUser } = await Reaction.extractReactionParams(req);
+  res.status(200).json({ message: "Reaction updated successfully", updatedReaction });
+});
 
-    const updatedReaction = await Reaction.updateReaction(reactionId, reaction, byUser);
-    res.status(200).json({ message: "Reaction updated successfully", reaction: updatedReaction });
-  } catch (error) {
-    console.error("Update Reaction Error:", error);
-    res.status(500).json({ message: "Server error", error });
-  }
-};
+// ✅ Soft Delete Reaction
+export const softDeleteRecipeReaction = expressAsyncHandler(async (req, res) => {
+  const { reactionId } = req.params;
 
-/**
- * Soft Delete a Recipe Reaction
- */
-export const softDeleteRecipeReaction = async (req, res) => {
-  try {
-    const { reactionId } = req.params;
-    const { byUser } = await Reaction.extractReactionParams(req);
+  await Reaction.softDeleteReaction(reactionId);
 
-    const deletedReaction = await Reaction.softDeleteReaction(reactionId, byUser);
-    res.status(200).json({ message: "Reaction deleted", reaction: deletedReaction });
-  } catch (error) {
-    console.error("Delete Reaction Error:", error);
-    res.status(500).json({ message: "Server error", error });
-  }
-};
+  res.status(200).json({ message: "Reaction deleted successfully" });
+});

@@ -1,6 +1,5 @@
 import express from "express";
-
-//  Imported Controllers
+import authenticateUser from "../middleware/authenticateUser.js";
 import {
   getUserNotifications,
   readSpecificNotification,
@@ -10,9 +9,9 @@ import {
 
 const router = express.Router();
 
-router.get("/users/:userId", getUserNotifications);
-router.patch("/:notificationId/read", readSpecificNotification);
-router.patch("/:notificationId/read-all", readAllNotifications);
-router.delete("/:notificationId/soft-delete", softDeleteNotification);
+router.get("/users/:userId", authenticateUser, getUserNotifications);
+router.patch("/:notificationId/read", authenticateUser, readSpecificNotification);
+router.patch("/:notificationId/read-all", authenticateUser, readAllNotifications);
+router.delete("/:notificationId/soft-delete", authenticateUser, softDeleteNotification);
 
 export default router;
