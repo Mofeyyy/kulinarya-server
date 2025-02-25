@@ -8,7 +8,12 @@ export const postNewRecipe = expressAsyncHandler(async (req, res) => {
 
   const result = await Recipe.createRecipe(recipeData);
 
-  res.status(201).json({ success: true, ...result });
+  res.status(201).json({
+    success: true,
+    statusCode: 201,
+    message: "Recipe Submitted For Moderation",
+    result,
+  });
 });
 
 export const updateRecipe = expressAsyncHandler(async (req, res) => {
@@ -18,7 +23,12 @@ export const updateRecipe = expressAsyncHandler(async (req, res) => {
     req.user.userId
   );
 
-  res.status(200).json({ success: true, ...result });
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe successfully updated",
+    result,
+  });
 });
 
 export const softDeleteRecipe = expressAsyncHandler(async (req, res) => {
@@ -27,13 +37,34 @@ export const softDeleteRecipe = expressAsyncHandler(async (req, res) => {
     req.user.userId
   );
 
-  res.status(200).json({ success: true, ...result });
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe successfully deleted",
+    result,
+  });
 });
 
 export const getAllApprovedRecipes = expressAsyncHandler(async (req, res) => {
   const result = await Recipe.getApprovedRecipes(req.query);
 
-  res.status(200).json({ success: true, ...result });
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Approved Recipes Fetched Succesfully",
+    ...result,
+  });
+});
+
+export const getPendingRecipes = expressAsyncHandler(async (req, res) => {
+  const result = await Recipe.getPendingRecipes(req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Pending Recipes Fetched Succesfully",
+    ...result,
+  });
 });
 
 export const getRecipeById = expressAsyncHandler(async (req, res) => {
@@ -41,13 +72,12 @@ export const getRecipeById = expressAsyncHandler(async (req, res) => {
 
   const recipe = await Recipe.getRecipeById(recipeId);
 
-  res.status(200).json({ success: true, recipe });
-});
-
-export const getPendingRecipes = expressAsyncHandler(async (req, res) => {
-  const result = await Recipe.getPendingRecipes(req.query);
-
-  res.status(200).json({ success: true, ...result });
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe Fetched Successfully",
+    recipe,
+  });
 });
 
 export const featureRecipe = expressAsyncHandler(async (req, res) => {
@@ -57,6 +87,7 @@ export const featureRecipe = expressAsyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
+    statusCode: 200,
     message: "Recipe Successfully Featured.",
     recipe: featuredRecipe,
   });
@@ -65,5 +96,12 @@ export const featureRecipe = expressAsyncHandler(async (req, res) => {
 export const getFeaturedRecipes = expressAsyncHandler(async (req, res) => {
   const result = await Recipe.getFeaturedRecipes(req.query);
 
-  res.status(200).json({ success: true, ...result });
+  res
+    .status(200)
+    .json({
+      success: true,
+      statusCode: 200,
+      message: "Featured Recipes Fetched Successfully",
+      ...result,
+    });
 });

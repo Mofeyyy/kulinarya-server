@@ -155,9 +155,8 @@ RecipeSchema.statics.createRecipe = async function (recipeData) {
   );
 
   newRecipe.moderationInfo = newModeration._id;
-  await newRecipe.save();
 
-  return { message: "Recipe Submitted For Moderation", recipe: newRecipe };
+  return await newRecipe.save();
 };
 
 //  Find and update Recipe
@@ -188,7 +187,7 @@ RecipeSchema.statics.updateRecipe = async function (recipeId, updates, userId) {
     throw new CustomError("Unauthorized", 401);
   }
 
-  return { message: "Recipe successfully updated", recipe: updatedRecipe };
+  return updatedRecipe;
 };
 
 // Soft Delete Recipe
@@ -206,9 +205,7 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 
   recipe.deletedAt = new Date();
 
-  await recipe.save();
-
-  return { message: "Recipe successfully deleted", recipe };
+  return await recipe.save();
 };
 
 // Get Approved Recipes
