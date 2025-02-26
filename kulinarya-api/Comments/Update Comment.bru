@@ -1,0 +1,21 @@
+meta {
+  name: Update Comment
+  type: http
+  seq: 3
+}
+
+patch {
+  url: http://localhost:4000/api/comments/:commentId
+  body: json
+  auth: none
+}
+
+params:path {
+  commentId: 67bf24efd13d1d17636ef342
+}
+
+body:json {
+  {
+    "content": "i'll try this. yummy"
+  }
+}
