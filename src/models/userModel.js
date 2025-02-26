@@ -10,6 +10,7 @@ import CustomError from "../utils/customError.js";
 import {
   registerUserSchema,
   loginUserSchema,
+  updateUserSchema,
 } from "../validations/userValidations.js";
 
 // Imported Models
@@ -100,7 +101,7 @@ userSchema.pre("save", async function (next) {
 // Generate Auth Token Method
 userSchema.methods.generateAuthToken = function (res) {
   const token = jwt.sign(
-    { userId: this._id, email: this.email, role: this.role, },
+    { userId: this._id, email: this.email, role: this.role },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -124,32 +125,20 @@ userSchema.methods.generateToken = function (type) {
   );
 };
 
-// TODO: Retest this method
 // Signup Static Method
-userSchema.statics.signup = async function (
-  email,
-  password,
-  firstName,
-  lastName
-) {
+userSchema.statics.signup = async function (signupCredentials) {
+  const { email } = signupCredentials;
+
   // Validate user data
-  registerUserSchema.parse({
-    email,
-    password,
-    firstName,
-    lastName,
-  });
+  registerUserSchema.parse(signupCredentials);
+
+  console.log(signupCredentials);
 
   const isEmailExists = await this.findOne({ email });
 
   if (isEmailExists) throw new CustomError("Email is already in use!", 400);
 
-  return await this.create({
-    email,
-    password,
-    firstName,
-    lastName,
-  });
+  return await this.create(signupCredentials);
 };
 
 // Verify Email Static Method
@@ -166,8 +155,6 @@ userSchema.statics.verifyEmail = async function (token) {
 
   user.isEmailVerified = true;
   await user.save();
-
-  return { message: "Email verified successfully!" };
 };
 
 // Resend Verification Static Method
@@ -239,8 +226,7 @@ userSchema.statics.sendPasswordResetEmail = async function (email) {
 // Static method for password reset
 userSchema.statics.passwordReset = async function (token, newPassword) {
   // Validate user data
-  userValidationSchema.parse({
-    mode: "update",
+  updateUserSchema.parse({
     password: newPassword,
   });
 
@@ -248,10 +234,10 @@ userSchema.statics.passwordReset = async function (token, newPassword) {
 
   const user = await this.findById(decodedToken.userId);
 
+  if (!user) throw new CustomError("User not found", 404);
+
   user.password = newPassword;
   await user.save();
-
-  return { message: "Password has been reset successfully" };
 };
 
 const User = model("User", userSchema);

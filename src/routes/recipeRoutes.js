@@ -9,7 +9,7 @@ import {
   getFeaturedRecipes,
   getPendingRecipes,
   featureRecipe,
-  softDeleteRecipe
+  softDeleteRecipe,
 } from "../controllers/recipeController.js";
 
 // Imported Middlewares
@@ -18,20 +18,28 @@ import checkRole from "../middleware/checkRole.js";
 
 const router = express.Router();
 
-// Recipe Management (Protected)
+// Protected Routes
 router.post("/", authenticateUser, postNewRecipe);
-// Requires login
-router.patch("/:recipeId", authenticateUser, updateRecipe); // Requires login
-router.delete("/:recipeId/soft-delete", authenticateUser, softDeleteRecipe); // Requires login
+router.patch("/:recipeId", authenticateUser, updateRecipe);
+router.delete("/:recipeId/soft-delete", authenticateUser, softDeleteRecipe);
 
 // Recipe Moderation (Protected - Only Admin & Content Creators)
-router.get("/pending", authenticateUser, checkRole(["admin", "creator"]), getPendingRecipes);
-router.patch("/:recipeId/feature", authenticateUser, checkRole(["admin", "creator"]), featureRecipe);
+router.get(
+  "/pending",
+  authenticateUser,
+  checkRole(["admin", "creator"]),
+  getPendingRecipes
+);
+router.patch(
+  "/:recipeId/feature",
+  authenticateUser,
+  checkRole(["admin", "creator"]),
+  featureRecipe
+);
 
-// Viewing Recipes (Public)
-router.get("/approved", getAllApprovedRecipes); // Public
-router.get("/featured", getFeaturedRecipes); // Public
-router.get("/:recipeId", getRecipeById); // Public
-
+// Public Routes (Viewing Recipes)
+router.get("/approved", getAllApprovedRecipes);
+router.get("/featured", getFeaturedRecipes);
+router.get("/:recipeId", getRecipeById);
 
 export default router;
