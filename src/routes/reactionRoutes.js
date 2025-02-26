@@ -12,6 +12,8 @@ import authenticateUser from "../middleware/authenticateUser.js";
 
 // ! ------------------------------------------------------------ !
 
+// TODO: Add GET route to fetch all reactions
+
 const router = express.Router();
 
 router.post("/:recipeId", authenticateUser, addRecipeReaction);

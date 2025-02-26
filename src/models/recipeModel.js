@@ -280,6 +280,8 @@ RecipeSchema.statics.getRecipeById = async function (recipeId) {
     throw new CustomError("Recipe has already been deleted", 404);
 
   return recipe;
+
+  // TODO: Aggregate comments and reactions here: 3 comments for preview and reactions counts for preview, other fetching will be done on a seperate route GET comments and reactions
 };
 
 // Feature Recipe
