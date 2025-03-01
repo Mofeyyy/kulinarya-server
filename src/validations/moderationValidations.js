@@ -5,24 +5,20 @@ const moderationBaseSchema = z.object({
 
   moderatedBy: z.string().min(1, "Moderator ID is required").optional(),
 
-  status: z
-    .enum(["approved", "pending", "rejected"], {
-      errorMap: () => ({
-        message:
-          "Invalid status. Must be 'approved', 'pending', or 'rejected'.",
-      }),
-    })
-    .optional(),
+  status: z.enum(["approved", "pending", "rejected"]),
 
   notes: z
     .string()
+    .min(2, "Notes must be at least 2 characters")
+    .max(1000, "Notes must not exceed 1000 characters")
     .trim()
-    .max(500, "Notes must not exceed 500 characters")
     .optional(),
+
+  deletedAt: z.date().nullable().optional(),
 });
 
-export const createModerationSchema = moderationBaseSchema.pick({
-  forPost: true,
-});
+export const createModerationSchema = moderationBaseSchema;
 
-export const updateModerationSchema = moderationBaseSchema.partial();
+export const updateModerationSchema = moderationBaseSchema
+  .pick({ status: true, notes: true, deletedAt: true })
+  .partial();
