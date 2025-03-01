@@ -8,6 +8,7 @@ import {
   generateNotificationContent,
   updateExistingNotification,
 } from "../utils/notificationUtils.js";
+import validateObjectId from "../utils/validators.js";
 
 // Imported Validations
 import { createNotificationSchema } from "../validations/notificationValidation.js";
@@ -58,54 +59,85 @@ const NotificationSchema = new Schema(
   { timestamps: true }
 );
 
-// Fetch user notifications (Unread & Not Deleted)
-NotificationSchema.statics.getUserNotifications = async function (userId) {
-  return this.find({
+NotificationSchema.statics.getUserNotifications = async function (req) {
+  const userId = req.user.userId;
+  const { limit = 10, cursor } = req.query;
+  // cursor is the last createdAt timestamp of the last fetched notification
+
+  validateObjectId(userId, "User");
+
+  const filter = {
     forUser: userId,
-    deletedAt: null,
-  })
+    deletedAt: { $in: [null, undefined] },
+  };
+
+  if (cursor) {
+    filter.createdAt = { $lt: new Date(cursor) };
+  } // If cursor of last notification fetched timestamp is provided, filter notifications created before that timestamp
+
+  const notifications = await this.find(filter)
+    .populate("byUser", "profilePictureUrl")
     .sort({ createdAt: -1 })
+    .limit(Number(limit))
     .lean();
+
+  // Set if there is still cursor to fetch more notifications
+  const newCursor =
+    notifications.length > 0
+      ? notifications[notifications.length - 1].createdAt
+      : null;
+
+  return { notifications, cursor: newCursor };
 };
 
-// Mark a notification as read
-NotificationSchema.statics.markAsRead = async function (notifId) {
-  const notification = await this.findById(notifId);
+NotificationSchema.statics.readAllNotifications = async function (req) {
+  const { notifId } = req.params;
+  const userId = req.user.userId;
+
+  validateObjectId(notifId, "Notification");
+
+  const notification = await this.findById(notifId).select("isRead forUser");
   if (!notification) throw new CustomError("Notification not found", 404);
+
+  if (notification.forUser.toString() !== userId)
+    throw new CustomError("Unauthorized", 401);
+
   notification.isRead = true;
   await notification.save();
+
+  return;
 };
 
-// Mark all notifications as read for a user
-NotificationSchema.statics.markAllAsRead = async function (userId) {
+NotificationSchema.statics.markAllAsRead = async function (req) {
+  const userId = req.user.userId;
+
+  validateObjectId(userId, "User");
+
   await this.updateMany(
-    { forUser: userId, isRead: false, deletedAt: null },
+    { forUser: userId, isRead: false, deletedAt: { $in: [null, undefined] } },
     { $set: { isRead: true } }
   );
 };
 
-// Soft delete a notification
 NotificationSchema.statics.softDeleteNotification = async function (query) {
+  const { notifId } = req.params;
+  const userId = req.user.userId;
+
   const notification = await this.findOne({
-    fromPost: query.fromPost,
-    byUser: query.byUser,
-    type: "reaction",
-    deletedAt: null,
-  });
-  if (notification) {
-    notification.deletedAt = new Date();
-    await notification.save();
-  }
-  return { message: "Notification successfully soft deleted" };
-};
+    _id: notifId,
+    forUser: userId,
+    deletedAt: { $in: [null, undefined] },
+  }).select("deletedAt forUser");
+  if (!notification) throw new CustomError("Notification not found", 404);
 
-// Create a new notification with Zod validation
-NotificationSchema.statics.createNotification = async function (data) {
-  const validatedData = notificationValidationSchema.parse(data); // ✅ Validate before creating
-  return this.create(validatedData);
-};
+  if (notification.forUser.toString() !== userId)
+    throw new CustomError("Unauthorized", 401);
 
-// * -----------------------------------------------------------------------
+  notification.deletedAt = new Date();
+  await notification.save();
+
+  return;
+};
 
 // Centralized Notification Handler
 // TODO: Test this
@@ -156,6 +188,12 @@ NotificationSchema.statics.handleNotification = async function ({
 
   return await this.create(notificationData);
 };
+
+// ? ----------------------------------------------------------------
+// NotificationSchema.statics.createNotification = async function (data) {
+//   const validatedData = notificationValidationSchema.parse(data); // ✅ Validate before creating
+//   return this.create(validatedData);
+// };
 
 const Notification = model("Notification", NotificationSchema);
 export default Notification;

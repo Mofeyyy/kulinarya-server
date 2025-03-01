@@ -9,9 +9,21 @@ import {
 
 const router = express.Router();
 
-router.get("/users/:userId", authenticateUser, getUserNotifications);
-router.patch("/:notificationId/read", authenticateUser, readSpecificNotification);
-router.patch("/:notificationId/read-all", authenticateUser, readAllNotifications);
-router.delete("/:notificationId/soft-delete", authenticateUser, softDeleteNotification);
+router.get("/", authenticateUser, getUserNotifications);
+router.patch(
+  "/:notificationId/read",
+  authenticateUser,
+  readSpecificNotification
+);
+router.patch(
+  "/:notificationId/read-all",
+  authenticateUser,
+  readAllNotifications
+);
+router.delete(
+  "/:notificationId/soft-delete",
+  authenticateUser,
+  softDeleteNotification
+);
 
 export default router;

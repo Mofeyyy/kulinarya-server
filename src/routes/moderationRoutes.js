@@ -12,7 +12,7 @@ import { checkRole } from "../middleware/checkRole.js";
 const router = express.Router();
 
 router.patch(
-  "/moderations/:moderationId",
+  "/:moderationId",
   authenticateUser,
   checkRole(["admin", "creator"]),
   moderatePost

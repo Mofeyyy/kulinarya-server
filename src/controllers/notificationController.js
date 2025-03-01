@@ -1,36 +1,57 @@
-import Notification from "../models/notificationModel.js";
 import expressAsyncHandler from "express-async-handler";
 
-// 📌 Get all notifications for a user (Unread & Not Deleted)
+// Imported Models
+import Notification from "../models/notificationModel.js";
+
+// ----------------------------------------------------------------
+
 export const getUserNotifications = expressAsyncHandler(async (req, res) => {
-  const { _id } = req.user; // Extract userId from middleware
-  const notifications = await Notification.getUserNotifications(_id);
-  res.status(200).json(notifications);
+  const result = await Notification.getUserNotifications(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Notifications Fetched Successfully",
+    ...result,
+  });
 });
 
-// 📌 Mark a specific notification as read
-export const readSpecificNotification = expressAsyncHandler(async (req, res) => {
-  const { notifId } = req.params;
-  await Notification.markAsRead(notifId);
-  res.status(200).json({ message: "Notification marked as read" });
-});
+export const readSpecificNotification = expressAsyncHandler(
+  async (req, res) => {
+    await Notification.readSpecificNotification(req);
 
-// 📌 Mark all notifications as read for a user
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: "Notification marked as read",
+    });
+  }
+);
+
 export const readAllNotifications = expressAsyncHandler(async (req, res) => {
-  const { _id } = req.user; // Extract userId from middleware
-  await Notification.markAllAsRead(_id);
-  res.status(200).json({ message: "All notifications marked as read" });
+  await Notification.readAllNotifications(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "All Notifications Marked as Read",
+  });
 });
 
-// 📌 Soft delete a notification
 export const softDeleteNotification = expressAsyncHandler(async (req, res) => {
-  const { notifId } = req.params;
-  await Notification.softDeleteNotification(notifId);
-  res.status(200).json({ message: "Notification soft deleted" });
+  await Notification.softDeleteNotification(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Notification successfully soft deleted",
+  });
 });
 
-// 📌 Create a new notification (Validation in Model)
-export const createNotification = expressAsyncHandler(async (req, res) => {
-  const notification = await Notification.createNotification(req.body);
-  res.status(201).json(notification);
-});
+// ? ----------------------------------------------------------------
+
+// ? I don't think this is needed because we have a centralized notification handler for moderation, reactions, and comments.
+// export const createNotification = expressAsyncHandler(async (req, res) => {
+//   const notification = await Notification.createNotification(req.body);
+//   res.status(201).json(notification);
+// });

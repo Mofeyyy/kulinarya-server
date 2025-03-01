@@ -4,7 +4,6 @@ import expressAsyncHandler from "express-async-handler";
 import Comment from "../models/commentModel.js";
 
 // ---------------------------------------------------------------------------
-// TODO: Add Notification System
 
 export const addRecipeComment = expressAsyncHandler(async (req, res) => {
   const result = await Comment.addComment(req);
