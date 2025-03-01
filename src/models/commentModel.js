@@ -11,6 +11,10 @@ import {
 import CustomError from "../utils/customError.js";
 import { validateObjectId } from "../utils/validators.js";
 
+// Imported Models
+import Recipe from "./recipeModel.js";
+import Notification from "./notificationModel.js";
+
 // ---------------------------------------------------------------------------
 
 const CommentSchema = new Schema(
@@ -40,41 +44,96 @@ const CommentSchema = new Schema(
   { timestamps: true }
 );
 
-CommentSchema.statics.addComment = async function (commentData) {
-  addCommentSchema.parse(commentData);
+CommentSchema.statics.addComment = async function (req) {
+  const { recipeId } = req.params;
+  const { content } = req.body;
+  const userInteractedId = req.user.userId;
+  const userInteractedFirstName = req.user.firstName;
 
-  isValidObjectId(commentData.fromPost, "Recipe");
+  validateObjectId(recipeId, "Recipe");
 
-  return await this.create(commentData);
+  const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
+  if (!recipe) throw new CustomError("Recipe not found", 404);
+
+  const commentData = addCommentSchema.parse({
+    fromPost: recipeId,
+    byUser: userInteractedId,
+    content,
+  });
+
+  const comment = await this.create(commentData);
+
+  const notification = await Notification.handleNotification({
+    byUser: {
+      userInteractedId,
+      userInteractedFirstName,
+    },
+    fromPost: {
+      recipeId,
+      recipeOwnerId: recipe.byUser.toString(),
+      recipeTitle: recipe.title,
+    },
+    type: "comment",
+  });
+
+  return { comment, notification };
 };
 
 CommentSchema.statics.updateComment = async function (req) {
-  const { content } = req.body;
-  const { commentId } = req.params;
-  const { userId } = req.user;
+  const { recipeId, commentId } = req.params;
+  const newComment = req.body.content;
+  const userInteractedId = req.user.userId;
+  const userInteractedFirstName = req.user.firstName;
 
+  validateObjectId(recipeId, "Recipe");
   validateObjectId(commentId, "Comment");
 
-  updateCommentSchema.parse({ content });
+  const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
+  if (!recipe) throw new CustomError("Recipe not found", 404);
 
-  const comment = await this.findOne({
+  updateCommentSchema.parse({ content: newComment });
+
+  const existingComment = await this.findOne({
     _id: commentId,
     deletedAt: { $in: [null, undefined] },
   }).select("byUser content");
+  const oldComment = existingComment?.content;
 
-  if (!comment) throw new CustomError("Comment not found", 404);
+  if (!existingComment) throw new CustomError("Comment not found", 404);
 
-  if (comment.byUser.toString() !== userId)
+  if (existingComment.byUser.toString() !== userInteractedId)
     throw new CustomError("Unauthorized", 401);
 
-  comment.content = content;
+  existingComment.content = newComment;
+  const updatedComment = await existingComment.save();
 
-  return await comment.save();
+  const notification = await Notification.handleNotification({
+    byUser: {
+      userInteractedId,
+      userInteractedFirstName,
+    },
+    fromPost: {
+      recipeId,
+      recipeOwnerId: recipe.byUser.toString(),
+      recipeTitle: recipe.title,
+    },
+    type: "comment",
+    additionalData: { oldComment },
+  });
+
+  return { comment: updatedComment, notification };
 };
 
 CommentSchema.statics.softDeleteComment = async function (req) {
-  const { commentId } = req.params;
-  const { userId } = req.user;
+  const { commentId, recipeId } = req.params;
+  const userInteractedId = req.user.userId;
+
+  validateObjectId(commentId, "Comment");
+  validateObjectId(recipeId, "Recipe");
+
+  const recipe = await Recipe.findById(recipeId).select("byUser").lean();
+  if (!recipe) throw new CustomError("Recipe not found", 404);
+  const recipeOwnerId = recipe.byUser.toString();
 
   const comment = await this.findOne({
     _id: commentId,
@@ -83,11 +142,23 @@ CommentSchema.statics.softDeleteComment = async function (req) {
 
   if (!comment) throw new CustomError("Comment not found", 404);
 
-  if (comment.byUser.toString() !== userId)
+  if (comment.byUser.toString() !== userInteractedId)
     throw new CustomError("Unauthorized", 401);
 
   comment.deletedAt = new Date();
   await comment.save();
+
+  await Notification.handleNotification({
+    byUser: {
+      userInteractedId,
+    },
+    fromPost: {
+      recipeId,
+      recipeOwnerId,
+    },
+    type: "comment",
+    isSoftDeleted: true,
+  });
 
   return;
 };

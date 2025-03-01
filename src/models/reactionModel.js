@@ -1,10 +1,21 @@
-import { Schema, model } from "mongoose";
+import { Schema, isValidObjectId, model } from "mongoose";
 import mongoose from "mongoose";
+
+// Imported Utilities
 import CustomError from "../utils/customError.js";
+import { validateObjectId } from "../utils/validators.js";
+
+// Imported Models
 import Notification from "./notificationModel.js";
-import Recipe from "./recipeModel.js"; // Import Recipe to get the title
-import User from "./userModel.js";
-import { reactionValidationSchema } from "../validations/reactionValidation.js"; // ✅ Import Zod Schema
+import Recipe from "./recipeModel.js";
+
+// Imported Validations
+import {
+  addReactionSchema,
+  updateReactionSchema,
+} from "../validations/reactionValidation.js";
+
+// ---------------------------------------------------------------------------
 
 const ReactionSchema = new Schema(
   {
@@ -13,16 +24,19 @@ const ReactionSchema = new Schema(
       ref: "Recipe",
       required: true,
     },
+
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
     reaction: {
       type: String,
       enum: ["heart", "drool", "neutral", null],
       default: null,
     },
+
     deletedAt: {
       type: Date,
       default: null,
@@ -31,146 +45,110 @@ const ReactionSchema = new Schema(
   { timestamps: true }
 );
 
-// 🔹 Static Methods
-// Add a New Reaction
-ReactionSchema.statics.addReaction = async function (
-  userId,
-  postId,
-  reactionType
-) {
-  const existingReaction = await this.findOne({
-    fromPost: postId,
-    byUser: userId,
-    deletedAt: null,
-  });
+// Fetching Reactions - Cursor based approach (Last Fetched Timestamp)
+ReactionSchema.statics.fetchAllReactions = async function (req) {
+  const { recipeId } = req.params;
+  const { limit = 10, cursor } = req.query;
+  // cursor is the last createdAt timestamp of the last fetched reaction
 
-  if (existingReaction) {
-    const result = await this.updateReactionType(existingReaction._id, reactionType, userId);
-    if (result.reaction) {
-      await this.handleReactionNotification(userId, postId, reactionType, null);
-    }
-    return result;
-  } else {
-    const validatedData = reactionValidationSchema.parse({
-      fromPost: postId,
-      byUser: userId,
-      reaction: reactionType,
-    });
+  validateObjectId(recipeId, "Recipe");
 
-    const newReaction = await this.create(validatedData);
-    await this.handleReactionNotification(userId, postId, reactionType, null); // First-time reaction
-    return newReaction;
-  }
+  const filter = {
+    fromPost: recipeId,
+    $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+  };
+
+  if (cursor) {
+    filter.createdAt = { $lt: new Date(cursor) };
+  } // If cursor of last comment fetched timestamp is provided, filter reactions created before that timestamp
+
+  const reactions = await this.find(filter)
+    .populate("byUser", "firstName middleName lastName profilePictureUrl")
+    .sort({ createdAt: -1 })
+    .limit(Number(limit))
+    .lean();
+
+  // Set if there is still cursor to fetch more comments
+  const newCursor =
+    reactions.length > 0 ? reactions[reactions.length - 1].createdAt : null;
+
+  return { reactions, cursor: newCursor };
 };
 
-// Update Reaction Type
-ReactionSchema.statics.updateReactionType = async function (
-  reactionId,
-  newReactionType,
-  userId
-) {
-  if (!newReactionType) {
-    throw new CustomError("Invalid reaction type", 400);
-  }
+ReactionSchema.statics.toggleReaction = async function (req) {
+  const { recipeId } = req.params;
+  const newReaction = req.body.reaction;
+  const userInteractedId = req.user.userId;
+  const userInteractedFirstName = req.user.firstName;
 
-  const reaction = await this.findById(reactionId);
-  if (!reaction) {
-    throw new CustomError("Reaction not found", 404);
-  }
+  validateObjectId(recipeId, "Recipe");
 
-  const previousReactionType = reaction.reaction;
-
-  if (previousReactionType === newReactionType) {
-    // Soft delete the reaction and the associated notification
-    await this.softDeleteReaction(reactionId);
-    return { message: "Reaction deleted successfully" };
-  }
-
-  reaction.reaction = newReactionType;
-  await reaction.save();
-
-  await this.handleReactionNotification(
-    userId,
-    reaction.fromPost,
-    newReactionType,
-    previousReactionType
-  );
-
-  return reaction;
-};
-
-// Soft Delete Reaction
-ReactionSchema.statics.softDeleteReaction = async function (reactionId) {
-  const reactionToDelete = await this.findById(reactionId);
-  if (!reactionToDelete) {
-    throw new CustomError("Reaction not found", 404);
-  }
-
-  reactionToDelete.deletedAt = new Date();
-  await reactionToDelete.save();
-
-  await Notification.softDeleteNotification({
-    fromPost: reactionToDelete.fromPost,
-    byUser: reactionToDelete.byUser,
-    type: "reaction",
-  });
-
-  return { message: "Reaction successfully soft deleted" };
-};
-
-// Handle Notifications for Reaction
-ReactionSchema.statics.handleReactionNotification = async function (
-  reactingUserId,
-  postId,
-  newReactionType,
-  oldReactionType
-) {
-  const recipe = await Recipe.findById(postId);
+  const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
 
+  const recipeOwnerId = recipe.byUser.toString();
   const recipeTitle = recipe.title;
-  const existingNotification = await Notification.findOne({
-    byUser: reactingUserId,
-    fromPost: postId,
-    type: "reaction",
+
+  const existingReaction = await this.findOne({
+    fromPost: recipeId,
+    byUser: userInteractedId,
   });
 
-  let notificationContent = "";
+  let reactionData;
+  let isSoftDeleted = false;
+  let oldReaction = null;
+  let isNewReaction = false;
 
-  if (existingNotification && existingNotification.deletedAt === null) {
-    if (oldReactionType) {
-      const reactorUser = await User.findById(reactingUserId);
-      notificationContent = `${reactorUser.firstName} changed their reaction from (${oldReactionType}) to (${newReactionType}) on your recipe: ${recipeTitle}.`;
+  if (existingReaction) {
+    oldReaction = existingReaction.reaction;
+    const isRestoring = existingReaction.deletedAt !== null;
+    const isSameReaction = existingReaction.reaction === newReaction;
+
+    if (isRestoring) {
+      // If the user reaction is soft deleted and the user reacted again
+      updateReactionSchema.parse({ reaction: newReaction });
+      existingReaction.reaction = newReaction;
+      existingReaction.deletedAt = null;
+    } else if (isSameReaction) {
+      // Soft Delete the reaction if the user reacted the same existing reaction
+      existingReaction.reaction = null;
+      existingReaction.deletedAt = new Date();
+      isSoftDeleted = true;
     } else {
-      const reactorUser = await User.findById(reactingUserId);
-      notificationContent = `${reactorUser.firstName} reacted (${newReactionType}) on your recipe: ${recipeTitle}.`;
+      // Update the reaction if the user reacted a different reaction
+      updateReactionSchema.parse({ reaction: newReaction });
+      existingReaction.reaction = newReaction;
     }
 
-    existingNotification.content = notificationContent;
-    existingNotification.isRead = false;
-    existingNotification.updatedAt = new Date(); // Update timestamp
-    await existingNotification.save();
+    reactionData = await existingReaction.save();
   } else {
-    if (recipe.byUser._id.toString() !== reactingUserId) {
-      const reactorUser = await User.findById(reactingUserId);
-      notificationContent = `${reactorUser.firstName} reacted (${newReactionType}) on your recipe: ${recipeTitle}.`;
-      if (existingNotification && existingNotification.deletedAt !== null) {
-        existingNotification.content = notificationContent;
-        existingNotification.isRead = false;
-        existingNotification.deletedAt = null;
-        existingNotification.updatedAt = new Date(); // Update timestamp
-        await existingNotification.save();
-      } else {
-        await Notification.createNotification({
-          forUser: recipe.byUser._id.toString(),
-          byUser: reactingUserId,
-          fromPost: postId,
-          type: "reaction",
-          content: notificationContent,
-        });
-      }
-    }
+    // If no existing reaction, create a new one
+    const newReactionData = addReactionSchema.parse({
+      fromPost: recipeId,
+      byUser: userInteractedId,
+      reaction: newReaction,
+    });
+    isNewReaction = true;
+
+    reactionData = await this.create(newReactionData);
   }
+
+  const notificationData = await Notification.handleNotification({
+    byUser: {
+      userInteractedId,
+      userInteractedFirstName,
+    },
+    fromPost: {
+      recipeId,
+      recipeOwnerId,
+      recipeTitle,
+    },
+    type: "reaction",
+    additionalData: { newReaction, oldReaction },
+    isSoftDeleted,
+  });
+
+  return { reactionData, notificationData, isNewReaction, isSoftDeleted };
 };
 
 const Reaction = model("Reaction", ReactionSchema);

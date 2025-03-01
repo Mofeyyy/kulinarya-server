@@ -119,7 +119,7 @@ userSchema.methods.generateToken = function (type) {
   const expiresIn = type === "emailVerification" ? "1h" : "15m";
 
   return jwt.sign(
-    { userId: this._id, email: this.email },
+    { userId: this._id, email: this.email, firstName: this.firstName },
     process.env.JWT_SECRET,
     { expiresIn }
   );
