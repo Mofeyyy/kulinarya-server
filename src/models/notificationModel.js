@@ -1,9 +1,19 @@
 import { Schema, model } from "mongoose";
 import mongoose from "mongoose";
-import CustomError from "../utils/customError.js";
-import { notificationValidationSchema } from "../validations/notificationValidation.js"; // ✅ Import Zod Schema
 
-// Notification Schema
+// Imported Utilities
+import CustomError from "../utils/customError.js";
+import { isUserOwnsTheRecipe } from "../utils/recipeUtils.js";
+import {
+  generateNotificationContent,
+  updateExistingNotification,
+} from "../utils/notificationUtils.js";
+
+// Imported Validations
+import { createNotificationSchema } from "../validations/notificationValidation.js";
+
+// ---------------------------------------------------------------------------
+
 const NotificationSchema = new Schema(
   {
     forUser: {
@@ -11,29 +21,35 @@ const NotificationSchema = new Schema(
       ref: "User",
       required: true,
     },
+
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
     fromPost: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Recipe",
       required: true,
     },
+
     type: {
       type: String,
       enum: ["moderation", "reaction", "comment"],
       required: true,
     },
+
     content: {
       type: String,
       required: true,
     },
+
     isRead: {
       type: Boolean,
       default: false,
     },
+
     deletedAt: {
       type: Date,
       default: null,
@@ -41,8 +57,6 @@ const NotificationSchema = new Schema(
   },
   { timestamps: true }
 );
-
-// 🔹 Static Methods for Clean Code
 
 // Fetch user notifications (Unread & Not Deleted)
 NotificationSchema.statics.getUserNotifications = async function (userId) {
@@ -89,6 +103,58 @@ NotificationSchema.statics.softDeleteNotification = async function (query) {
 NotificationSchema.statics.createNotification = async function (data) {
   const validatedData = notificationValidationSchema.parse(data); // ✅ Validate before creating
   return this.create(validatedData);
+};
+
+// * -----------------------------------------------------------------------
+
+// Centralized Notification Handler
+// TODO: Test this
+NotificationSchema.statics.handleNotification = async function ({
+  byUser,
+  fromPost,
+  type,
+  additionalData = {},
+  isSoftDeleted = false,
+}) {
+  const { recipeId, recipeOwnerId, recipeTitle } = fromPost;
+  const { userInteractedId, userInteractedFirstName } = byUser;
+
+  // To prevent notifying self
+  if (isUserOwnsTheRecipe(recipeOwnerId, userInteractedId)) return;
+
+  const existingNotification = await this.findOne({
+    forUser: recipeOwnerId,
+    byUser: userInteractedId,
+    fromPost: recipeId,
+    type,
+  });
+
+  const content = generateNotificationContent(type, {
+    userInteractedFirstName,
+    recipeTitle,
+    additionalData,
+  });
+
+  // If notification exists, update or soft delete it
+  if (existingNotification) {
+    return await updateExistingNotification(existingNotification, {
+      content,
+      isSoftDeleted,
+    });
+  }
+
+  // No need to create notification if soft deleted
+  if (isSoftDeleted) return;
+
+  const notificationData = createNotificationSchema.parse({
+    forUser: recipeOwnerId,
+    byUser: userInteractedId,
+    fromPost: recipeId,
+    type,
+    content,
+  });
+
+  return await this.create(notificationData);
 };
 
 const Notification = model("Notification", NotificationSchema);
