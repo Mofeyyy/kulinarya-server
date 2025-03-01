@@ -3,20 +3,27 @@ import { updateNotificationSchema } from "../validations/notificationValidation"
 
 export const generateNotificationContent = (
   type,
-  { userInteractedFirstName, recipeTitle, additionalData }
+  { userInteractedFirstName, recipeTitle, isSoftDeleted, additionalData }
 ) => {
+  if (isSoftDeleted) return; // No content if soft delete
+
   switch (type) {
     case "moderation":
       return `Your recipe: ${recipeTitle} has been moderated.`;
 
     case "reaction":
       const { oldReaction, newReaction } = additionalData;
+
       return oldReaction
         ? `${userInteractedFirstName} changed their reaction from (${oldReaction}) to (${newReaction}) on your recipe: ${recipeTitle}.`
         : `${userInteractedFirstName} reacted (${newReaction}) on your recipe: ${recipeTitle}.`;
 
     case "comment":
-      return `${userInteractedFirstName} commented on your recipe: ${recipeTitle}.`;
+      const { oldComment } = additionalData;
+
+      return oldComment
+        ? `${userInteractedFirstName} changed their comment on your recipe: ${recipeTitle}.`
+        : `${userInteractedFirstName} commented on your recipe: ${recipeTitle}.`;
 
     default:
       throw new CustomError("Invalid notification type", 400);
@@ -37,7 +44,11 @@ export const updateExistingNotification = async (
     notification.isRead = false;
   }
 
-  updateNotificationSchema.parse(notification);
+  updateNotificationSchema.parse({
+    deletedAt: notification.deletedAt,
+    content: notification.content,
+    isRead: notification.isRead,
+  });
 
   return await notification.save();
 };

@@ -7,42 +7,34 @@ import Comment from "../models/commentModel.js";
 // TODO: Add Notification System
 
 export const addRecipeComment = expressAsyncHandler(async (req, res) => {
-  const { userId } = req.user;
-  const { recipeId } = req.params;
-  const { content } = req.body;
-
-  const newComment = await Comment.addComment({
-    fromPost: recipeId,
-    byUser: userId,
-    content,
-  });
+  const result = await Comment.addComment(req);
 
   res.status(201).json({
     success: true,
     statusCode: 201,
-    message: "Comment added successfully",
-    comment: newComment,
+    message: "Comment Added and Recipe Owner Notified Successfully",
+    ...result,
   });
 });
 
 export const updateRecipeComment = expressAsyncHandler(async (req, res) => {
-  await Comment.updateComment(req);
+  const result = await Comment.updateComment(req);
 
   res.status(200).json({
     success: true,
     statusCode: 200,
-    message: "Comment updated successfully",
+    message: "Comment Updated and Recipe Owner Notified Successfully",
+    ...result,
   });
 });
 
 export const softDeleteRecipeComment = async (req, res) => {
-  const updatedComment = await Comment.softDeleteComment(req);
+  await Comment.softDeleteComment(req);
 
   res.status(200).json({
     success: true,
     statusCode: 200,
     message: "Comment Deleted Successfully",
-    comment: updatedComment,
   });
 };
 
