@@ -1,5 +1,5 @@
 // Imported Validation Schema
-import { updateNotificationSchema } from "../validations/notificationValidation";
+import { updateNotificationSchema } from "../validations/notificationValidation.js";
 
 export const generateNotificationContent = (
   type,

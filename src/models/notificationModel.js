@@ -8,7 +8,7 @@ import {
   generateNotificationContent,
   updateExistingNotification,
 } from "../utils/notificationUtils.js";
-import validateObjectId from "../utils/validators.js";
+import { validateObjectId } from "../utils/validators.js";
 
 // Imported Validations
 import { createNotificationSchema } from "../validations/notificationValidation.js";
