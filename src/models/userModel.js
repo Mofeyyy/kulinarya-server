@@ -104,7 +104,12 @@ userSchema.pre("save", async function (next) {
 // Generate Auth Token Method
 userSchema.methods.generateAuthToken = function (res) {
   const token = jwt.sign(
-    { userId: this._id, email: this.email, role: this.role },
+    {
+      userId: this._id,
+      email: this.email,
+      role: this.role,
+      firstName: this.firstName,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -122,7 +127,7 @@ userSchema.methods.generateToken = function (type) {
   const expiresIn = type === "emailVerification" ? "1h" : "15m";
 
   return jwt.sign(
-    { userId: this._id, email: this.email, firstName: this.firstName },
+    { userId: this._id, email: this.email },
     process.env.JWT_SECRET,
     { expiresIn }
   );
