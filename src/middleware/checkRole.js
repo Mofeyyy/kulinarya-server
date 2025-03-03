@@ -1,7 +1,7 @@
 import expressAsyncHandler from "express-async-handler";
 import CustomError from "../utils/customError.js";
 
-export const checkRole = (allowedRoles) =>
+const checkRole = (allowedRoles) =>
   expressAsyncHandler(async (req, _, next) => {
     if (!req.user || !req.user.role) throw new CustomError("Unauthorized", 401);
 

@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 // Imported Utility Functions
 import { verifyToken } from "../utils/tokenUtils.js";
 import CustomError from "../utils/customError.js";
+import { validateObjectId } from "../utils/validators.js";
 
 // Imported Validation Schema
 import {
@@ -15,6 +16,8 @@ import {
 
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
+
+// TODO: Add Object Id Validations
 
 const userSchema = new Schema(
   {
@@ -146,6 +149,8 @@ userSchema.statics.verifyEmail = async function (token) {
   // Verify and decode the token
   const decodedToken = verifyToken(token);
 
+  validateObjectId(decodedToken.userId, "User ID");
+
   const user = await this.findById(decodedToken.userId);
 
   if (!user) throw new CustomError("User not found", 404);
@@ -199,9 +204,13 @@ userSchema.statics.login = async function (email, password) {
 
 // Getting Auth User Details Static Method
 userSchema.statics.getAuthUserDetails = async function (req) {
-  const user = await this.findById(req.user.userId).select(
+  const userId = req.user.userId;
+
+  validateObjectId(userId, "User ID");
+
+  const user = await this.findById(userId).select(
     "email firstName middleName lastName role"
-  ); // Fetch necessary fields
+  );
 
   if (!user) throw new CustomError("User not found", 404);
 
@@ -232,12 +241,103 @@ userSchema.statics.passwordReset = async function (token, newPassword) {
 
   const decodedToken = verifyToken(token);
 
+  validateObjectId(decodedToken.userId, "User ID");
+
   const user = await this.findById(decodedToken.userId);
 
   if (!user) throw new CustomError("User not found", 404);
 
   user.password = newPassword;
   await user.save();
+};
+
+// Static method for fetching specific user data
+userSchema.statics.getSpecificUserData = async function (req) {
+  const { userId } = req.params;
+
+  validateObjectId(userId, "User ID");
+
+  const user = await this.findOne({
+    _id: userId,
+    deletedAt: { $in: [null, undefined] },
+  })
+    .select("email firstName middleName lastName profilePictureUrl bio")
+    .lean();
+
+  if (!user) throw new CustomError("User not found", 404);
+
+  return user;
+};
+
+// Static method for updating user data
+userSchema.statics.updateUserData = async function (req) {
+  const { userId } = req.params;
+  const updates = req.body;
+
+  updateUserSchema.parse(updates);
+  validateObjectId(userId, "User ID");
+
+  const updatedUser = await this.findOneAndUpdate(
+    {
+      _id: userId,
+      deletedAt: { $in: [null, undefined] },
+    },
+    updates,
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedUser) {
+    const existingUser = await this.findById(userId).select("deletedAt").lean();
+
+    if (!existingUser) throw new CustomError("User not found", 404);
+
+    if (existingUser.deletedAt)
+      throw new CustomError("User has been deleted", 403);
+
+    throw new CustomError("Unauthorized", 401);
+  }
+
+  return updatedUser;
+};
+
+// Static method for soft deleting user account
+userSchema.statics.softDeleteUser = async function (req) {
+  const { userId } = req.params;
+  const userUpdatingId = req.user.userId;
+  const userUpdatingRole = req.user.role;
+
+  validateObjectId(userId, "User ID");
+
+  const user = await this.findById(userId).select("deletedAt");
+
+  if (!user) throw new CustomError("User not found", 404);
+
+  if (user.deletedAt) throw new CustomError("User has been deleted", 403);
+
+  const isTheUserUpdatingHimself = userUpdatingId === userId;
+  const isTheUserUpdatingAnAdmin = userUpdatingRole === "admin";
+
+  if (isTheUserUpdatingHimself || isTheUserUpdatingAnAdmin)
+    throw new CustomError("Unauthorized", 401);
+
+  user.deletedAt = new Date();
+  await user.save();
+};
+
+// Static method for fetching user recipes
+userSchema.statics.getUserRecipes = async function (req) {
+  const { userId } = req.params;
+
+  validateObjectId(userId, "User ID");
+
+  const userRecipes = await Recipe.find({
+    byUser: userId,
+    deletedAt: { $in: [null, undefined] },
+  }).lean();
+
+  if (!userRecipes) throw new CustomError("User has no recipes", 404);
+
+  return userRecipes;
 };
 
 const User = model("User", userSchema);
