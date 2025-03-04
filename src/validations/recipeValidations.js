@@ -18,11 +18,21 @@ const recipeBaseSchema = z.object({
 
   originProvince: z.string().min(1, "Origin province is required"),
 
-  pictureUrl: z
+  mainPictureUrl: z
     .string()
     .trim()
     .url("Invalid URL format")
     .startsWith("https://", "Picture URL must start with 'https://'")
+    .optional(),
+
+  additionalPicturesUrls: z
+    .array(
+      z
+        .string()
+        .trim()
+        .url("Invalid URL format")
+        .startsWith("https://", "Picture URL must start with 'https://'")
+    )
     .optional(),
 
   videoUrl: z
@@ -80,7 +90,8 @@ export const createRecipeSchema = recipeBaseSchema.pick({
   title: true,
   foodCategory: true,
   originProvince: true,
-  pictureUrl: true,
+  mainPictureUrl: true,
+  additionalPicturesUrls: true,
   videoUrl: true,
   description: true,
   ingredients: true,
@@ -94,7 +105,8 @@ export const updateRecipeSchema = recipeBaseSchema
     title: true,
     foodCategory: true,
     originProvince: true,
-    pictureUrl: true,
+    mainPictureUrl: true,
+    additionalPicturesUrls: true,
     videoUrl: true,
     description: true,
     ingredients: true,

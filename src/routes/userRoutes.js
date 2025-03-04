@@ -9,17 +9,21 @@ import {
   softDeleteUserAccount,
 } from "../controllers/userController.js";
 
-// Imported Utilities
+// Imported Middlewares
 import authenticateUser from "../middleware/authenticateUser.js";
+import { fileUpload } from "../middleware/multerMiddleware.js";
 
 // ----------------------------------------------------------------
 
 const router = express.Router();
 
 router.get("/:userId", authenticateUser, getSpecificUserData);
-router.patch("/:userId/update", authenticateUser, updateUserData);
-
-// TODO: Add restrictions: admins, and account owners
+router.patch(
+  "/:userId/update",
+  authenticateUser,
+  fileUpload.single("profilePicture"),
+  updateUserData
+);
 router.delete("/:userId/soft-delete", authenticateUser, softDeleteUserAccount);
 
 // Fetch Recipes From a Specific User

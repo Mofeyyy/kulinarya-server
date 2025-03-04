@@ -13,6 +13,7 @@ import {
 // Imported Utilities
 import CustomError from "../utils/customError.js";
 import { validateObjectId } from "../utils/validators.js";
+import handleSupabaseUpload from "../utils/handleSupabaseUpload.js";
 
 // Imported Aggregation Pipelines
 import { recipeAggregationPipeline } from "../utils/aggregationPipelines.js";
@@ -41,9 +42,14 @@ const RecipeSchema = new Schema(
       required: true,
     },
 
-    pictureUrl: {
+    mainPictureUrl: {
       type: String,
       default: "",
+    },
+
+    additionalPicturesUrls: {
+      type: [String],
+      default: [],
     },
 
     videoUrl: {
@@ -160,7 +166,49 @@ RecipeSchema.statics.createRecipe = async function (recipeData) {
 };
 
 //  Find and update Recipe
-RecipeSchema.statics.updateRecipe = async function (recipeId, updates, userId) {
+// TODO: Test this especially the supabase file upload when implementing on frontend
+RecipeSchema.statics.updateRecipe = async function (req) {
+  const recipeId = req.params.recipeId;
+  const updates = req.body;
+  const userId = req.user.userId;
+
+  // Supabase File Uploads
+  // Recipe Main Display Picture
+  if (req.files) {
+    if (req.files.mainPicture) {
+      updates.mainPictureUrl = await handleSupabaseUpload({
+        file: req.files.mainPicture[0],
+        folder: "recipe_pictures",
+        allowedTypes: ["jpeg", "png"],
+        maxFileSize: 2 * 1024 * 1024, // 2mb
+      });
+    }
+
+    // Recipe Highlight Video
+    if (req.files.highlightVideo) {
+      updates.videoUrl = await handleSupabaseUpload({
+        file: req.files.highlightVideo[0],
+        folder: "recipe_videos",
+        allowedTypes: ["mp4", "mov"],
+        maxFileSize: 10 * 1024 * 1024, // 10mb
+      });
+    }
+
+    // Additional Pictures
+    if (req.files.additionalPictures) {
+      updates.additionalPicturesUrls = await Promise.all(
+        req.files.additionalPictures.map((file) =>
+          handleSupabaseUpload({
+            file,
+            folder: "recipe_pictures",
+            allowedTypes: ["jpeg", "png"],
+            maxFileSize: 2 * 1024 * 1024, // 2mb
+          })
+        )
+      );
+    }
+  }
+
   updateRecipeSchema.parse(updates);
   validateObjectId(recipeId, "Recipe");
 

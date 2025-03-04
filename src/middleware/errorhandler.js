@@ -1,5 +1,7 @@
 import { ZodError } from "zod";
 import jwt from "jsonwebtoken";
+import { MulterError } from "multer";
+
 const { JsonWebTokenError, TokenExpiredError } = jwt;
 
 const errorHandler = (err, req, res, next) => {
@@ -27,6 +29,11 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // TODO: Recheck this errors later
+  else if (err instanceof MulterError) {
+    statusCode = 400;
+    message = err.message;
+  }
+
   // Handle Mongoose Validation Errors
   else if (err.name === "ValidationError") {
     statusCode = 400;
