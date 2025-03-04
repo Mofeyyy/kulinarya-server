@@ -80,13 +80,17 @@ CommentSchema.statics.addComment = async function (req) {
 };
 
 CommentSchema.statics.updateComment = async function (req) {
-  const { recipeId, commentId } = req.params;
+  const { commentId } = req.params;
   const newComment = req.body.content;
   const userInteractedId = req.user.userId;
   const userInteractedFirstName = req.user.firstName;
 
+  const comment = await this.findOne({ _id: commentId });
+  if (!comment) throw new CustomError("Comment not found", 404);
+
+  const recipeId = comment.fromPost;
+
   validateObjectId(recipeId, "Recipe");
-  validateObjectId(commentId, "Comment");
 
   const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
@@ -125,22 +129,19 @@ CommentSchema.statics.updateComment = async function (req) {
 };
 
 CommentSchema.statics.softDeleteComment = async function (req) {
-  const { commentId, recipeId } = req.params;
+  const { commentId } = req.params;
   const userInteractedId = req.user.userId;
 
   validateObjectId(commentId, "Comment");
-  validateObjectId(recipeId, "Recipe");
+
+  const comment = await this.findOne({ _id: commentId });
+  if (!comment) throw new CustomError("Comment not found", 404);
+
+  const recipeId = comment.fromPost;
 
   const recipe = await Recipe.findById(recipeId).select("byUser").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
   const recipeOwnerId = recipe.byUser.toString();
-
-  const comment = await this.findOne({
-    _id: commentId,
-    deletedAt: { $in: [null, undefined] },
-  }).select("byUser");
-
-  if (!comment) throw new CustomError("Comment not found", 404);
 
   if (comment.byUser.toString() !== userInteractedId)
     throw new CustomError("Unauthorized", 401);
