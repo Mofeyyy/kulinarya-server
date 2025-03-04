@@ -95,14 +95,7 @@ ModerationSchema.statics = {
       notes,
     });
 
-    const isOldAndNewStatusSame =
-      existingModeration.status === moderationData.status;
-
-    const isOldAndNewNotesSame =
-      existingModeration.notes === moderationData.notes;
-
-    // Check if there's actually a change before updating
-    if (isOldAndNewStatusSame || isOldAndNewNotesSame) {
+    if (existingModeration.status !== moderationData.status || existingModeration.notes !== moderationData.notes) {
       existingModeration.set({
         status: moderationData.status,
         notes: moderationData.notes,

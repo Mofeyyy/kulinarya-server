@@ -5,7 +5,7 @@ const moderationBaseSchema = z.object({
 
   moderatedBy: z.string().min(1, "Moderator ID is required").optional(),
 
-  status: z.enum(["approved", "pending", "rejected"]),
+  status: z.enum(["approved", "pending", "rejected"]).optional(),
 
   notes: z
     .string()
