@@ -1,40 +1,137 @@
 import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
+import CustomError from "../utils/customError.js";
+import { trackPostViewSchema } from "../validations/postViewValidation.js";
 
-// Post View Schema
+
+// ---------------------------------------------------------------------------
+
 const PostViewSchema = new Schema(
   {
     fromPost: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Recipe",
+      ref: "RecipePost",
       required: true,
     },
-
     viewType: {
       type: String,
-      enum: ["guest", "user"],
+      enum: ["user", "guest"],
       required: true,
     },
-
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
     },
-
     byGuest: {
-      type: String,
-      default: "",
-    },
-
-    deletedAt: {
-      type: Date,
+      type: String, // Store guest's IP address
       default: null,
     },
   },
-
   { timestamps: true }
 );
 
+// ---------------------------------------------------------------------------
+
+PostViewSchema.statics.trackView = async function (req) {
+  const { fromPost, viewType, byUser, byGuest } = req.body;
+
+  // Determine viewType and assign user/guest dynamically
+  const finalViewType = viewType || (req.user ? "user" : "guest");
+  const finalByUser = req.user ? req.user.userId : byUser || null;
+  const finalByGuest = !req.user ? req.ip : byGuest || null;
+
+  // Validate input using Zod
+  const validatedData = trackPostViewSchema.parse({
+    fromPost,
+    viewType: finalViewType,
+    byUser: finalByUser,
+    byGuest: finalByGuest,
+  });
+
+  // Set the time limit (e.g., 1 hour)
+  const oneHourAgo = new Date();
+  oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+  let existingView;
+
+  if (finalViewType === "user") {
+    // Check if user has already viewed this post within the last hour
+    existingView = await this.findOne({
+      fromPost,
+      byUser: finalByUser,
+      createdAt: { $gte: oneHourAgo },
+    });
+  } else {
+    // Check if guest (IP) has already viewed this post within the last hour
+    existingView = await this.findOne({
+      fromPost,
+      byGuest: finalByGuest,
+      createdAt: { $gte: oneHourAgo },
+    });
+  }
+
+  if (existingView) {
+    throw new CustomError("View already recorded within the last hour", 429); // 429 = Too Many Requests
+  }
+
+  // Create the post view record
+  const newView = await this.create(validatedData);
+  return { postView: newView };
+};
+
+PostViewSchema.statics.getPostViews = async function (req) {
+  const { recipeId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(recipeId)) {
+    throw new CustomError("Invalid Recipe ID", 400);
+  }
+
+  const views = await this.countDocuments({ fromPost: recipeId });
+  return { recipeId, views };
+};
+
+PostViewSchema.statics.getTopPostViews = async function () {
+  const startOfMonth = new Date(new Date().setDate(1)); // First day of the current month
+  const endOfMonth = new Date(); // Today's date
+
+  const topViewedPosts = await this.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+      }
+    },
+    {
+      $group: {
+        _id: "$fromPost",
+        totalViews: { $sum: 1 }
+      }
+    },
+    {
+      $lookup: {
+        from: "recipes", // Collection name of the Recipe model
+        localField: "_id",
+        foreignField: "_id",
+        as: "recipe"
+      }
+    },
+    {
+      $project: {
+        _id: 1,  // Keep _id as the first field
+        recipeTitle: { $arrayElemAt: ["$recipe.title", 0] }, // Place recipeTitle second
+        totalViews: 1 // Place totalViews last
+      }
+    },
+    { $sort: { totalViews: -1 } },
+    { $limit: 10 } // Show top 10 most viewed posts
+  ]);
+
+  console.log(topViewedPosts);
+
+  return { topViewedPosts };
+};
+
+
+
 const PostView = model("PostView", PostViewSchema);
 export default PostView;
-

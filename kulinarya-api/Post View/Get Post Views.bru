@@ -1,0 +1,15 @@
+meta {
+  name: Get Post Views
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:4000/api/post-views/:recipeId
+  body: none
+  auth: none
+}
+
+params:path {
+  recipeId: 67c5f1028224e4c01e207e0a
+}

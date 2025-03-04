@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Post View",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
