@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { verifyToken } from "../utils/tokenUtils.js";
 import CustomError from "../utils/customError.js";
 import { validateObjectId } from "../utils/validators.js";
+import handleSupabaseUpload from "../utils/handleSupabaseUpload.js";
 
 // Imported Validation Schema
 import {
@@ -16,6 +17,7 @@ import {
 
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
+import handleSupabaseUpload from "../utils/handleSupabaseUpload.js";
 
 // TODO: Add Object Id Validations
 
@@ -275,12 +277,23 @@ userSchema.statics.getSpecificUserData = async function (req) {
 };
 
 // Static method for updating user data
+// TODO: Test this especially the supabase file upload when implementing on frontend
 userSchema.statics.updateUserData = async function (req) {
   const { userId } = req.params;
   const updates = req.body;
 
-  updateUserSchema.parse(updates);
+  // Supabase File Upload
+  if (req.file) {
+    updates.profilePictureUrl = await handleSupabaseUpload({
+      file: req.file,
+      folder: "profile_pictures",
+      allowedTypes: ["jpeg", "png"],
+      maxFileSize: 2 * 1024 * 1024, // 2mb
+    });
+  }
+
   validateObjectId(userId, "User ID");
+  updateUserSchema.parse(updates);
 
   const updatedUser = await this.findOneAndUpdate(
     {

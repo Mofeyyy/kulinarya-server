@@ -17,11 +17,7 @@ export const postNewRecipe = expressAsyncHandler(async (req, res) => {
 });
 
 export const updateRecipe = expressAsyncHandler(async (req, res) => {
-  const result = await Recipe.updateRecipe(
-    req.params.recipeId,
-    req.body,
-    req.user.userId
-  );
+  const result = await Recipe.updateRecipe(req);
 
   res.status(200).json({
     success: true,
@@ -96,12 +92,10 @@ export const featureRecipe = expressAsyncHandler(async (req, res) => {
 export const getFeaturedRecipes = expressAsyncHandler(async (req, res) => {
   const result = await Recipe.getFeaturedRecipes(req.query);
 
-  res
-    .status(200)
-    .json({
-      success: true,
-      statusCode: 200,
-      message: "Featured Recipes Fetched Successfully",
-      ...result,
-    });
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Featured Recipes Fetched Successfully",
+    ...result,
+  });
 });

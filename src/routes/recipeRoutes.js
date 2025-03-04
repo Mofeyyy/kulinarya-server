@@ -15,12 +15,22 @@ import {
 // Imported Middlewares
 import authenticateUser from "../middleware/authenticateUser.js";
 import checkRole from "../middleware/checkRole.js";
+import { fileUpload } from "../middleware/multerMiddleware.js";
 
 const router = express.Router();
 
 // Protected Routes
 router.post("/", authenticateUser, postNewRecipe);
-router.patch("/:recipeId", authenticateUser, updateRecipe);
+router.patch(
+  "/:recipeId",
+  authenticateUser,
+  fileUpload.fields([
+    { name: "mainImage", maxCount: 1 },
+    { name: "additionalImages", maxCount: 5 },
+    { name: "video", maxCount: 1 },
+  ]),
+  updateRecipe
+);
 router.delete("/:recipeId/soft-delete", authenticateUser, softDeleteRecipe);
 
 // Recipe Moderation (Protected - Only Admin & Content Creators)
