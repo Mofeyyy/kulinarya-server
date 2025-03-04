@@ -1,5 +1,5 @@
 // Imported Utilities
-import CustomError from "./customError";
+import CustomError from "../utils/customError.js";
 import supabase from "../utils/supabase.js";
 import { v4 as uuidv4 } from "uuid";
 

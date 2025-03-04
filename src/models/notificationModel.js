@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import mongoose from "mongoose";
+import User from "../models/userModel.js";
 
 // Imported Utilities
 import CustomError from "../utils/customError.js";
@@ -37,7 +38,7 @@ const NotificationSchema = new Schema(
 
     type: {
       type: String,
-      enum: ["moderation", "reaction", "comment"],
+      enum: ["moderation", "reaction", "comment", "announcement"],
       required: true,
     },
 
@@ -88,6 +89,24 @@ NotificationSchema.statics.getUserNotifications = async function (req) {
       : null;
 
   return { notifications, cursor: newCursor };
+};
+
+NotificationSchema.statics.readSpecificNotification = async function (req) {
+  const { notifId } = req.params;
+  const userId = req.user.userId;
+
+  validateObjectId(notifId, "Notification");
+
+  const notification = await this.findById(notifId).select("isRead forUser");
+  if (!notification) throw new CustomError("Notification not found", 404);
+
+  if (notification.forUser.toString() !== userId)
+    throw new CustomError("Unauthorized", 401);
+
+  notification.isRead = true;
+  await notification.save();
+
+  return;
 };
 
 NotificationSchema.statics.readAllNotifications = async function (req) {
@@ -188,6 +207,22 @@ NotificationSchema.statics.handleNotification = async function ({
 
   return await this.create(notificationData);
 };
+
+NotificationSchema.statics.createAnnouncementNotification = async function ({ announcementId, createdBy }) {
+  // Notify all users (excluding the creator)
+  const usersToNotify = await User.find({ _id: { $ne: createdBy } }).select("_id");
+
+  const notifications = usersToNotify.map(user => ({
+    forUser: user._id,
+    byUser: createdBy,
+    fromPost: announcementId,
+    type: "announcement",
+    content: "A new announcement has been posted!",
+  }));
+
+  await this.insertMany(notifications);
+};
+
 
 // ? ----------------------------------------------------------------
 // NotificationSchema.statics.createNotification = async function (data) {

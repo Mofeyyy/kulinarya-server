@@ -14,4 +14,12 @@ export const authenticateUser = expressAsyncHandler(async (req, _, next) => {
   next();
 });
 
+authenticateUser.optional = expressAsyncHandler(async (req, _, next) => {
+  const token = req.cookies.kulinarya_auth_token;
+
+  req.user = token ? verifyToken(token) : null; // If no token, treat as guest
+
+  next();
+});
+
 export default authenticateUser;

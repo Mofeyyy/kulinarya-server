@@ -10,7 +10,7 @@ export const notificationBaseSchema = z.object({
 
   fromPost: z.string().min(1, "fromPost is required"),
 
-  type: z.enum(["moderation", "reaction", "comment"]),
+  type: z.enum(["moderation", "reaction", "comment", "announcement"]),
 
   content: z.string().min(1, "Content is required"),
 
