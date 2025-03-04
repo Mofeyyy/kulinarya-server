@@ -1,19 +1,60 @@
-export const createAnnouncement = async (req, res) => {
-  res.status(200).json({ message: "Create Announcement Route" });
-};
+import expressAsyncHandler from "express-async-handler";
 
-export const getAnnouncements = async (req, res) => {
-  res.status(200).json({ message: "Get Announcements Route" });
-};
+// Imported Models
+import Announcement from "../models/announcementModel.js";
 
-export const getAllActiveAnnouncements = async (req, res) => {
-  res.status(200).json({ message: "Get All Active Announcements Route" });
-};
+// ---------------------------------------------------------------------------
 
-export const updateAnnouncement = async (req, res) => {
-  res.status(200).json({ message: "Update Announcement Route" });
-};
+export const createAnnouncement = expressAsyncHandler(async (req, res) => {
+  const result = await Announcement.createAnnouncement(req);
 
-export const softDeleteAnnouncement = async (req, res) => {
-  res.status(200).json({ message: "Delete Announcement Route" });
-};
+  res.status(201).json({
+    success: true,
+    statusCode: 201,
+    message: "Announcement Created Successfully",
+    ...result,
+  });
+});
+
+export const getAnnouncements = expressAsyncHandler(async (req, res) => {
+  const result = await Announcement.getAnnouncements(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Announcements Fetched Successfully",
+    ...result,
+  });
+});
+
+export const getAllActiveAnnouncements = expressAsyncHandler(async (req, res) => {
+  const result = await Announcement.getAllActiveAnnouncements(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Active Announcements Fetched Successfully",
+    ...result,
+  });
+});
+
+export const updateAnnouncement = expressAsyncHandler(async (req, res) => {
+  const result = await Announcement.updateAnnouncement(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Announcement Updated Successfully",
+    ...result,
+  });
+});
+
+export const softDeleteAnnouncement = expressAsyncHandler(async (req, res) => {
+  await Announcement.softDeleteAnnouncement(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Announcement Deleted Successfully",
+  });
+});
