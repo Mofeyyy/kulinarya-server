@@ -17,7 +17,6 @@ import {
 
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
-import handleSupabaseUpload from "../utils/handleSupabaseUpload.js";
 
 // TODO: Add Object Id Validations
 
