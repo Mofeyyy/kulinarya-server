@@ -92,12 +92,13 @@ NotificationSchema.statics.getUserNotifications = async function (req) {
 };
 
 NotificationSchema.statics.readSpecificNotification = async function (req) {
-  const { notifId } = req.params;
+  const { notificationId } = req.params;
   const userId = req.user.userId;
+  console.log("notificationId:", notificationId);
 
-  validateObjectId(notifId, "Notification");
+  validateObjectId(notificationId, "Notification");
 
-  const notification = await this.findById(notifId).select("isRead forUser");
+  const notification = await this.findById(notificationId).select("isRead forUser");
   if (!notification) throw new CustomError("Notification not found", 404);
 
   if (notification.forUser.toString() !== userId)
@@ -109,23 +110,6 @@ NotificationSchema.statics.readSpecificNotification = async function (req) {
   return;
 };
 
-NotificationSchema.statics.readSpecificNotification = async function (req) {
-  const { notifId } = req.params;
-  const userId = req.user.userId;
-
-  validateObjectId(notifId, "Notification");
-
-  const notification = await this.findById(notifId).select("isRead forUser");
-  if (!notification) throw new CustomError("Notification not found", 404);
-
-  if (notification.forUser.toString() !== userId)
-    throw new CustomError("Unauthorized", 401);
-
-  notification.isRead = true;
-  await notification.save();
-
-  return;
-};
 
 NotificationSchema.statics.markAllAsRead = async function (req) {
   const userId = req.user.userId;
@@ -139,11 +123,11 @@ NotificationSchema.statics.markAllAsRead = async function (req) {
 };
 
 NotificationSchema.statics.softDeleteNotification = async function (req) {
-  const { notifId } = req.params;
+  const { notificationId } = req.params;
   const userId = req.user.userId;
 
   const notification = await this.findOne({
-    _id: notifId,
+    _id: notificationId,
     forUser: userId,
     deletedAt: { $in: [null, undefined] },
   }).select("deletedAt forUser");

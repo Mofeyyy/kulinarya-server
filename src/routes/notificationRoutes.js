@@ -16,7 +16,7 @@ router.patch(
   readSpecificNotification
 );
 router.patch(
-  "/:notificationId/read-all",
+  "/read-all",
   authenticateUser,
   readAllNotifications
 );
