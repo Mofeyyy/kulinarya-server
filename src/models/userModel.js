@@ -17,6 +17,7 @@ import {
 
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
+import Recipe from "./recipeModel.js";
 
 // TODO: Add Object Id Validations
 
@@ -332,9 +333,14 @@ userSchema.statics.softDeleteUser = async function (req) {
   if (user.deletedAt) throw new CustomError("User has been deleted", 403);
 
   const isTheUserUpdatingHimself = userUpdatingId === userId;
-  const isTheUserUpdatingAnAdmin = userUpdatingRole === "admin";
 
-  if (isTheUserUpdatingHimself || isTheUserUpdatingAnAdmin)
+  // Check if the user being deleted is an admin
+  const userToDelete = await this.findById(userId).select("role");
+  if (!userToDelete) throw new CustomError("User not found", 404);
+
+  const isTheUserToDeleteAnAdmin = userToDelete.role === "admin";
+
+  if (isTheUserUpdatingHimself || isTheUserToDeleteAnAdmin)
     throw new CustomError("Unauthorized", 401);
 
   user.deletedAt = new Date();
@@ -342,7 +348,7 @@ userSchema.statics.softDeleteUser = async function (req) {
 };
 
 // Static method for fetching user recipes
-userSchema.statics.getUserRecipes = async function (req) {
+userSchema.statics.getUserRecipesList = async function (req) {
   const { userId } = req.params;
 
   validateObjectId(userId, "User ID");
@@ -354,7 +360,12 @@ userSchema.statics.getUserRecipes = async function (req) {
 
   if (!userRecipes) throw new CustomError("User has no recipes", 404);
 
-  return userRecipes;
+  const totalRecipes = await Recipe.countDocuments({
+    byUser: userId,
+    deletedAt: { $in: [null, undefined] }, // Exclude soft deleted recipes
+  });
+
+  return { userRecipes, totalRecipes };
 };
 
 userSchema.statics.initialLogin = async function () {
