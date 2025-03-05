@@ -16,7 +16,12 @@ import { validateObjectId } from "../utils/validators.js";
 import handleSupabaseUpload from "../utils/handleSupabaseUpload.js";
 
 // Imported Aggregation Pipelines
-import { recipeAggregationPipeline } from "../utils/aggregationPipelines.js";
+import {
+  recipeAggregationPipeline,
+  commentCountPipeline,
+  commentPreviewPipeline,
+  reactionCountPipeline,
+} from "../utils/aggregationPipelines.js";
 
 const RecipeSchema = new Schema(
   {
@@ -318,9 +323,17 @@ RecipeSchema.statics.getPendingRecipes = async function (query) {
 RecipeSchema.statics.getRecipeById = async function (recipeId) {
   validateObjectId(recipeId, "Recipe");
 
-  const recipe = await this.findOne({ _id: recipeId })
-    .populate("byUser", "firstName middleName lastName")
-    .lean();
+  const recipe = await this.aggregate([
+    ...recipeAggregationPipeline(
+      {},
+      { _id: recipeId, "moderationInfo.status": "approved" },
+      [
+        ...commentPreviewPipeline,
+        ...commentCountPipeline,
+        ...reactionCountPipeline,
+      ]
+    ),
+  ]).lean();
 
   if (!recipe) throw new CustomError("Recipe not found", 404);
 
@@ -330,6 +343,7 @@ RecipeSchema.statics.getRecipeById = async function (recipeId) {
   return recipe;
 
   // TODO: Aggregate comments and reactions here: 3 comments for preview and reactions counts for preview, other fetching will be done on a seperate route GET comments and reactions
+  // TODO: TEST THIS
 };
 
 // Feature Recipe
