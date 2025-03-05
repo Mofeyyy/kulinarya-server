@@ -357,5 +357,26 @@ userSchema.statics.getUserRecipes = async function (req) {
   return userRecipes;
 };
 
+userSchema.statics.initialLogin = async function () {
+  console.log("Running initial login...");
+
+  const adminExists = await this.findOne({ role: "admin" }).lean();
+
+  if (!adminExists) {
+    await this.create({
+      email: process.env.INITIAL_ADMIN_EMAIL,
+      password: process.env.INITIAL_ADMIN_PASSWORD,
+      firstName: "Kulinarya",
+      lastName: "Admin",
+      role: "admin",
+      isEmailVerified: true,
+    });
+
+    console.log("Initial Login Success!");
+
+    return { message: "Initial Login Success!" };
+  }
+};
+
 const User = model("User", userSchema);
 export default User;
