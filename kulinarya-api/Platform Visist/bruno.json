@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Platform Visit",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
