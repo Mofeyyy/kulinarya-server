@@ -1,0 +1,15 @@
+meta {
+  name: Soft Delete Notification
+  type: http
+  seq: 5
+}
+
+delete {
+  url: http://localhost:4000/api/notifications/:notificationId/soft-delete
+  body: none
+  auth: none
+}
+
+params:path {
+  notificationId: 
+}
