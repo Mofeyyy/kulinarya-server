@@ -26,7 +26,7 @@ export const updateUserData = expressAsyncHandler(async (req, res) => {
 });
 
 export const softDeleteUserAccount = expressAsyncHandler(async (req, res) => {
-  await User.softDeleteUserAccount(req);
+  await User.softDeleteUser(req);
 
   res.status(200).json({
     success: true,
@@ -36,12 +36,14 @@ export const softDeleteUserAccount = expressAsyncHandler(async (req, res) => {
 });
 
 export const getUserRecipes = expressAsyncHandler(async (req, res) => {
-  const userRecipes = await User.getUserRecipes(req);
+  const { userRecipes, totalRecipes } = await User.getUserRecipesList(req);
 
   res.status(200).json({
     success: true,
     statusCode: 200,
-    message: "User Recipes Fetched Succesfully",
-    userRecipes,
+    message: "User Recipes Fetched Successfully",
+    totalRecipes, 
+    userRecipes
   });
 });
+
