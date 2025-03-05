@@ -109,7 +109,7 @@ NotificationSchema.statics.readSpecificNotification = async function (req) {
   return;
 };
 
-NotificationSchema.statics.readAllNotifications = async function (req) {
+NotificationSchema.statics.readSpecificNotification = async function (req) {
   const { notifId } = req.params;
   const userId = req.user.userId;
 
@@ -138,7 +138,7 @@ NotificationSchema.statics.markAllAsRead = async function (req) {
   );
 };
 
-NotificationSchema.statics.softDeleteNotification = async function (query) {
+NotificationSchema.statics.softDeleteNotification = async function (req) {
   const { notifId } = req.params;
   const userId = req.user.userId;
 
@@ -208,11 +208,16 @@ NotificationSchema.statics.handleNotification = async function ({
   return await this.create(notificationData);
 };
 
-NotificationSchema.statics.createAnnouncementNotification = async function ({ announcementId, createdBy }) {
+NotificationSchema.statics.createAnnouncementNotification = async function ({
+  announcementId,
+  createdBy,
+}) {
   // Notify all users (excluding the creator)
-  const usersToNotify = await User.find({ _id: { $ne: createdBy } }).select("_id");
+  const usersToNotify = await User.find({ _id: { $ne: createdBy } }).select(
+    "_id"
+  );
 
-  const notifications = usersToNotify.map(user => ({
+  const notifications = usersToNotify.map((user) => ({
     forUser: user._id,
     byUser: createdBy,
     fromPost: announcementId,
@@ -222,7 +227,6 @@ NotificationSchema.statics.createAnnouncementNotification = async function ({ an
 
   await this.insertMany(notifications);
 };
-
 
 // ? ----------------------------------------------------------------
 // NotificationSchema.statics.createNotification = async function (data) {

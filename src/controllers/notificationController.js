@@ -29,7 +29,7 @@ export const readSpecificNotification = expressAsyncHandler(
 );
 
 export const readAllNotifications = expressAsyncHandler(async (req, res) => {
-  await Notification.readAllNotifications(req);
+  await Notification.markAllAsRead(req);
 
   res.status(200).json({
     success: true,
