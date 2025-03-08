@@ -216,7 +216,7 @@ userSchema.statics.getAuthUserDetails = async function (req) {
   validateObjectId(userId, "User ID");
 
   const user = await this.findById(userId).select(
-    "email firstName middleName lastName role"
+    "email firstName middleName lastName role profilePictureUrl"
   );
 
   if (!user) throw new CustomError("User not found", 404);
