@@ -199,12 +199,12 @@ userSchema.statics.login = async function (email, password) {
 
   const user = await this.findOne({ email });
 
-  if (!user) throw new CustomError("User not found", 404);
+  if (!user) throw new CustomError("Email is not registered", 404);
 
   // TODO: Add bcrypt catch error here
   const isPasswordMatch = await bcrypt.compare(password, user.password);
 
-  if (!isPasswordMatch) throw new CustomError("Password is incorrect", 400);
+  if (!isPasswordMatch) throw new CustomError("Wrong Password!", 400);
 
   return user;
 };
@@ -216,7 +216,7 @@ userSchema.statics.getAuthUserDetails = async function (req) {
   validateObjectId(userId, "User ID");
 
   const user = await this.findById(userId).select(
-    "email firstName middleName lastName role"
+    "email firstName middleName lastName role profilePictureUrl"
   );
 
   if (!user) throw new CustomError("User not found", 404);
@@ -366,6 +366,27 @@ userSchema.statics.getUserRecipesList = async function (req) {
   });
 
   return { userRecipes, totalRecipes };
+};
+
+userSchema.statics.initialLogin = async function () {
+  console.log("Running initial login...");
+
+  const adminExists = await this.findOne({ role: "admin" }).lean();
+
+  if (!adminExists) {
+    await this.create({
+      email: process.env.INITIAL_ADMIN_EMAIL,
+      password: process.env.INITIAL_ADMIN_PASSWORD,
+      firstName: "Kulinarya",
+      lastName: "Admin",
+      role: "admin",
+      isEmailVerified: true,
+    });
+
+    console.log("Initial Login Success!");
+
+    return { message: "Initial Login Success!" };
+  }
 };
 
 const User = model("User", userSchema);

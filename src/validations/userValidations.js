@@ -39,10 +39,13 @@ export const registerUserSchema = userBaseSchema.pick({
 });
 
 // User Login
-export const loginUserSchema = userBaseSchema.pick({
-  email: true,
-  password: true,
-});
+export const loginUserSchema = userBaseSchema
+  .pick({
+    email: true,
+  })
+  .extend({
+    password: z.string().min(2, "Password is Required"),
+  });
 
 // TODO: Use this when implementing edit profile
 // Edit or Update User Profile
