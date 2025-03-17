@@ -5,9 +5,13 @@ meta {
 }
 
 patch {
-  url: http://localhost:4000/api/recipes/67b5ace367cd9003d06fcd9d/feature
+  url: http://localhost:4000/api/recipes/:recipeId/feature
   body: none
   auth: none
+}
+
+params:path {
+  recipeId: 67c7f9e2b8150d278b3f1820
 }
 
 body:json {

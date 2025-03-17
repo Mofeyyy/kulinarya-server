@@ -95,6 +95,12 @@ const RecipeSchema = new Schema(
       default: null,
     },
 
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+
     isFeatured: {
       type: Boolean,
       default: false,

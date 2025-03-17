@@ -47,3 +47,17 @@ export const getUserRecipes = expressAsyncHandler(async (req, res) => {
   });
 });
 
+export const getTopSharers = expressAsyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(req.query.limit) : 4; 
+  const topSharers = await User.getTopSharers(limit);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Top Sharers Fetched Successfully",
+    topSharers,
+  });
+});
+
+
+

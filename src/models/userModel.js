@@ -368,5 +368,52 @@ userSchema.statics.getUserRecipesList = async function (req) {
   return { userRecipes, totalRecipes };
 };
 
+userSchema.statics.getTopSharers = async function (limit = 4) {
+  const topSharers = await this.aggregate([
+    {
+      $lookup: {
+        from: "recipes",
+        localField: "_id",
+        foreignField: "byUser",
+        as: "recipes",
+      },
+    },
+    {
+      $addFields: {
+        totalRecipes: {
+          $size: {
+            $filter: {
+              input: "$recipes",
+              as: "recipe",
+              cond: { $eq: ["$$recipe.status", "approved"] }, // Only count approved recipes
+            },
+          },
+        },
+      },
+    },
+    {
+      $match: { totalRecipes: { $gt: 0 } }, // Ensure only users with at least 1 approved recipe are included
+    },
+    {
+      $sort: { totalRecipes: -1 }, // Sort by most approved recipes
+    },
+    {
+      $limit: limit, // Limit to top 4 sharers
+    },
+    {
+      $project: {
+        firstName: 1,
+        lastName: 1,
+        profilePictureUrl: 1,
+        totalRecipes: 1,
+      },
+    },
+  ]);
+
+  return topSharers;
+};
+
+
+
 const User = model("User", userSchema);
 export default User;
