@@ -2,7 +2,8 @@
 export const recipeAggregationPipeline = (
   filter = {},
   otherFilters = {},
-  otherAggregationsPiplines = []
+  otherAggregationsPiplines = [],
+  otherStages = []
 ) => [
   {
     $lookup: {
@@ -40,6 +41,8 @@ export const recipeAggregationPipeline = (
       ...otherFilters,
     },
   },
+
+  ...otherStages,
 ];
 
 // Pipeline for previewing the latest 3 comments with byUser details
@@ -92,7 +95,28 @@ export const commentPreviewPipeline = [
   },
 ];
 
-// Pipeline for getting the total comments count
+export const reactionCountPipeline = [
+  {
+    $lookup: {
+      from: "reactions",
+      let: { recipeId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$fromPost", "$$recipeId"] } } },
+        { $group: { _id: "$reaction", count: { $sum: 1 } } },
+        { $project: { _id: 0, reaction: "$_id", count: 1 } },
+      ],
+      as: "totalReactions",
+    },
+  },
+  {
+    $set: {
+      totalReactions: {
+        $ifNull: ["$totalReactions", []], // Fallback to an empty array
+      },
+    },
+  },
+];
+
 export const commentCountPipeline = [
   {
     $lookup: {
@@ -107,24 +131,10 @@ export const commentCountPipeline = [
   },
   {
     $set: {
-      totalComments: { $arrayElemAt: ["$commentsCount.totalComments", 0] },
+      totalComments: {
+        $ifNull: [{ $arrayElemAt: ["$commentsCount.totalComments", 0] }, 0], // Handle null count
+      },
     },
   },
-  { $unset: "commentsCount" }, // Remove unnecessary field
-];
-
-// Pipeline for aggregating reaction counts
-export const reactionCountPipeline = [
-  {
-    $lookup: {
-      from: "reactions",
-      let: { recipeId: "$_id" },
-      pipeline: [
-        { $match: { $expr: { $eq: ["$fromPost", "$$recipeId"] } } },
-        { $group: { _id: "$reaction", count: { $sum: 1 } } }, // Count reactions by type
-        { $project: { _id: 0, reaction: "$_id", count: 1 } },
-      ],
-      as: "reactionCounts",
-    },
-  },
+  { $unset: "commentsCount" },
 ];

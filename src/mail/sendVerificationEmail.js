@@ -46,7 +46,7 @@ const sendVerificationEmail = async (user) => {
             display: inline-block;
             padding: 12px 24px;
             background-color: #ff8c00;
-            color: white;
+            color: #ffffff;
             text-decoration: none;
             border-radius: 5px;
             font-size: 16px;
