@@ -17,8 +17,9 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 
 // Imported Middlewares
 import errorHandler from "./middleware/errorHandler.js";
+import initialLogin from "./middleware/initialLogin.js";
 
-// ! --------------------------------------------------------------- !
+//  ---------------------------------------------------------------
 
 const app = express();
 
@@ -42,7 +43,7 @@ app.use((req, _, next) => {
   next();
 }); // Log all requests in console
 
-app.get("/", (_, res) => {
+app.get("/", initialLogin, (_, res) => {
   res.send("Backend is running");
 }); // Respond that the backend is running
 

@@ -116,47 +116,52 @@ const RecipeSchema = new Schema(
 
 // Extract Query Params
 RecipeSchema.statics.extractQueryParams = function (query) {
-  // Ensure that the page number is not less than 1 and the content limit is not less than 1 and greater than 100
+  console.log(`Query: ${JSON.stringify(query)}`);
+
   const page = Number.isNaN(Number(query.page))
     ? 1
     : Math.max(1, Number(query.page));
-
   const limit = Number.isNaN(Number(query.limit))
     ? 10
     : Math.min(Math.max(1, Number(query.limit)), 100);
-
-  // Sort Order
   const sortOrder =
     query.sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
 
-  // Filter Values
   const filter = {};
+  const searchConditions = [];
 
   // Search Filter
-  const searchConditions = [];
-  if (query.search?.trim()) {
-    const safeSearch = query.search
-      .trim()
-      .replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"); // Escape special characters
-
+  const search = query.search?.trim();
+  if (search) {
+    const safeSearch = search.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"); // Escape special characters
     searchConditions.push(
-      { title: { $regex: new RegExp(safeSearch, "i") } },
-      { description: { $regex: new RegExp(safeSearch, "i") } }
+      { title: { $regex: safeSearch, $options: "i" } },
+      { description: { $regex: safeSearch, $options: "i" } }
     );
   }
 
   // Category & Origin Filters
-  if (query.category?.trim())
-    filter.foodCategory = { $regex: new RegExp(query.category.trim(), "i") };
+  const category = query.category?.trim();
+  const origin = query.origin?.trim();
 
-  if (query.origin?.trim())
-    filter.origin = { $regex: new RegExp(query.origin.trim(), "i") };
+  if (category) {
+    filter.foodCategory = { $regex: category, $options: "i" };
+  }
+
+  if (origin) {
+    filter.originProvince = { $regex: origin, $options: "i" };
+  }
 
   // Exclude Deleted Recipes
-  searchConditions.push({ deletedAt: null }, { deletedAt: { $exists: false } });
+  const deletedFilter = {
+    $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+  };
 
-  // Merge Search & Exclude Deleted Filters
-  if (searchConditions.length) filter.$or = searchConditions;
+  if (searchConditions.length) {
+    filter.$and = [{ $or: searchConditions }, deletedFilter];
+  } else {
+    filter.$and = [deletedFilter];
+  }
 
   return { page, limit, sortOrder, filter };
 };
@@ -271,12 +276,16 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
+  console.log(limit);
+
   // Count approved recipes
   const approvedRecipeCount = await this.aggregate([
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "approved",
     }),
 
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
     { $count: "total" },
   ]);
 
@@ -284,16 +293,24 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
 
   // Fetch recipes data
   const approvedRecipesData = await this.aggregate([
-    ...recipeAggregationPipeline(filter, {
-      "moderationInfo.status": "approved",
-    }),
+    ...recipeAggregationPipeline(
+      filter,
+      {
+        "moderationInfo.status": "approved",
+      },
+      [...commentCountPipeline, ...reactionCountPipeline]
+    ),
 
     { $sort: { ...sortOrder } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
   ]);
 
-  return { approvedRecipesData, totalApprovedRecipes, page, limit };
+  return {
+    totalApprovedRecipes,
+    recipes: approvedRecipesData,
+    pagination: { page, limit },
+  };
 };
 
 // Get Pending Recipes - For Moderating in Admin Panel
