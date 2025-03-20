@@ -8,7 +8,7 @@ import {
   getRecipeById,
   getFeaturedRecipes,
   getPendingRecipes,
-  featureRecipe,
+  toggleFeatureRecipe,
   softDeleteRecipe,
 } from "../controllers/recipeController.js";
 
@@ -41,10 +41,10 @@ router.get(
   getPendingRecipes
 );
 router.patch(
-  "/:recipeId/feature",
+  "/:recipeId/toggle-feature",
   authenticateUser,
   checkRole(["admin", "creator"]),
-  featureRecipe
+  toggleFeatureRecipe
 );
 
 // Public Routes (Viewing Recipes)

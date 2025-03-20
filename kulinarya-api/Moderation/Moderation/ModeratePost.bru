@@ -5,9 +5,13 @@ meta {
 }
 
 patch {
-  url: http://localhost:4000/api/moderations/67d79b00609ad4c70caccfb6
+  url: http://localhost:4000/api/moderations/:moderationId
   body: json
   auth: none
+}
+
+params:path {
+  moderationId: 67db0ee43b87ebdeb8fbda82
 }
 
 body:json {

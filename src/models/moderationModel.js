@@ -109,6 +109,10 @@ async moderatePost(req) {
       await Recipe.findByIdAndUpdate(recipeModeratedId, {
         status: "approved",
       });
+    } else if (moderationData.status === "rejected") {
+      await Recipe.findByIdAndUpdate(recipeModeratedId, {
+        status: "rejected",  // Recipe status set to rejected
+      });
     }
 
     await Notification.handleNotification({

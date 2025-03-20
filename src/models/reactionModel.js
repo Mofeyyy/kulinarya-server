@@ -49,7 +49,6 @@ const ReactionSchema = new Schema(
 ReactionSchema.statics.fetchAllReactions = async function (req) {
   const { recipeId } = req.params;
   const { limit = 10, cursor } = req.query;
-  // cursor is the last createdAt timestamp of the last fetched reaction
 
   validateObjectId(recipeId, "Recipe");
 
@@ -60,20 +59,25 @@ ReactionSchema.statics.fetchAllReactions = async function (req) {
 
   if (cursor) {
     filter.createdAt = { $lt: new Date(cursor) };
-  } // If cursor of last comment fetched timestamp is provided, filter reactions created before that timestamp
+  }
 
+  // Fetch reactions with pagination
   const reactions = await this.find(filter)
     .populate("byUser", "firstName middleName lastName profilePictureUrl")
     .sort({ createdAt: -1 })
     .limit(Number(limit))
     .lean();
 
-  // Set if there is still cursor to fetch more comments
+  // Get total reaction count (excluding deleted)
+  const totalReactions = await this.countDocuments(filter);
+
+  // Determine if there is a next cursor
   const newCursor =
     reactions.length > 0 ? reactions[reactions.length - 1].createdAt : null;
 
-  return { reactions, cursor: newCursor };
+  return { reactions, totalReactions, cursor: newCursor };
 };
+
 
 ReactionSchema.statics.toggleReaction = async function (req) {
   const { recipeId } = req.params;

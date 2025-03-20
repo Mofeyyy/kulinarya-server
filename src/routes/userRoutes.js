@@ -7,7 +7,8 @@ import {
   getUserRecipes,
   updateUserData,
   softDeleteUserAccount,
-  getTopSharers
+  getTopSharers,
+  getAllUsers
 } from "../controllers/userController.js";
 
 // Imported Middlewares
@@ -18,6 +19,7 @@ import { fileUpload } from "../middleware/multerMiddleware.js";
 
 const router = express.Router();
 // Get Top Sharers
+router.get("/all", authenticateUser, getAllUsers);
 router.get("/top-sharers", getTopSharers);
 router.get("/:userId", authenticateUser, getSpecificUserData);
 router.patch(

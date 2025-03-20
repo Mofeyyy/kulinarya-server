@@ -276,31 +276,25 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
-  console.log(limit);
+  console.log(`Page: ${page}, Limit: ${limit}`); // Debugging log
 
-  // Count approved recipes
+  //Count Approved Recipes
   const approvedRecipeCount = await this.aggregate([
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "approved",
     }),
-
-    { $skip: (page - 1) * limit },
-    { $limit: limit },
-    { $count: "total" },
+    { $count: "total" }, 
   ]);
 
   const totalApprovedRecipes = approvedRecipeCount[0]?.total || 0;
 
-  // Fetch recipes data
+  // ✅ Fetch Approved Recipes (WITH Pagination)
   const approvedRecipesData = await this.aggregate([
     ...recipeAggregationPipeline(
       filter,
-      {
-        "moderationInfo.status": "approved",
-      },
+      { "moderationInfo.status": "approved" },
       [...commentCountPipeline, ...reactionCountPipeline]
     ),
-
     { $sort: { ...sortOrder } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
@@ -309,7 +303,11 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
   return {
     totalApprovedRecipes,
     recipes: approvedRecipesData,
-    pagination: { page, limit },
+    pagination: {
+      page,
+      limit,
+      totalPages: Math.ceil(totalApprovedRecipes / limit), // 
+    },
   };
 };
 

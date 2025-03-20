@@ -34,7 +34,8 @@ app.use(
     origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 ); // For accessing or allowing backend on a different domain
 

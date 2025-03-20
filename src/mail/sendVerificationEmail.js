@@ -31,10 +31,13 @@ const sendVerificationEmail = async (user) => {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
           }
           .logo {
-            width: 150px;
-            height: auto;
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%; 
+            object-fit: cover; 
             margin-bottom: 20px;
           }
+
           .header {
             font-size: 24px;
             font-weight: bold;

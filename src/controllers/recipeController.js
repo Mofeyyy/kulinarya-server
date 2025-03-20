@@ -76,16 +76,16 @@ export const getRecipeById = expressAsyncHandler(async (req, res) => {
   });
 });
 
-export const featureRecipe = expressAsyncHandler(async (req, res) => {
+export const toggleFeatureRecipe = expressAsyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
-  const featuredRecipe = await Recipe.featureRecipe(recipeId);
+  const updatedRecipe = await Recipe.toggleFeatureRecipe(recipeId);
 
   res.status(200).json({
-    success: true,
-    statusCode: 200,
-    message: "Recipe Successfully Featured.",
-    recipe: featuredRecipe,
+    message: updatedRecipe.isFeatured
+      ? "Recipe has been featured"
+      : "Recipe has been unfeatured",
+    recipe: updatedRecipe,
   });
 });
 

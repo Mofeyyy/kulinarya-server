@@ -14,6 +14,13 @@ export const getSpecificUserData = expressAsyncHandler(async (req, res) => {
   });
 });
 
+export const getAllUsers = expressAsyncHandler(async (req, res) => {
+  const result = await User.getAllUsers(req.query);
+  res.status(200).json(result);
+});
+
+
+
 export const updateUserData = expressAsyncHandler(async (req, res) => {
   const updatedUserData = await User.updateUserData(req);
 

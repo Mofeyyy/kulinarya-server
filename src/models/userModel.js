@@ -392,6 +392,10 @@ userSchema.statics.initialLogin = async function () {
 userSchema.statics.getTopSharers = async function (limit = 4) {
   const topSharers = await this.aggregate([
     {
+      $match: { 
+        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] } // Exclude deleted users
+    },
+    {
       $lookup: {
         from: "recipes",
         localField: "_id",
@@ -413,13 +417,13 @@ userSchema.statics.getTopSharers = async function (limit = 4) {
       },
     },
     {
-      $match: { totalRecipes: { $gt: 0 } }, // Ensure only users with at least 1 approved recipe are included
+      $match: { totalRecipes: { $gt: 0 } }, // Only users with at least 1 approved recipe
     },
     {
       $sort: { totalRecipes: -1 }, // Sort by most approved recipes
     },
     {
-      $limit: limit, // Limit to top 4 sharers
+      $limit: limit, // Limit to top sharers
     },
     {
       $project: {
@@ -435,6 +439,13 @@ userSchema.statics.getTopSharers = async function (limit = 4) {
 };
 
 
+userSchema.statics.getAllUsers = async function () {
+  const users = await this.find({ deletedAt: { $in: [null, undefined] } })
+    .select("firstName lastName email role createdAt")
+    .lean();
+
+  return users;
+};
 
 const User = model("User", userSchema);
 export default User;
