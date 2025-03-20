@@ -11,7 +11,7 @@ const handleSupabaseUpload = async ({
   allowedTypes,
   maxFileSize,
 }) => {
-  const fileExt = file.mime.split("/")[1];
+  const fileExt = file.mimetype.split("/")[1];
   const fileSize = file.size;
 
   if (!allowedTypes.includes(fileExt)) {
@@ -40,7 +40,11 @@ const handleSupabaseUpload = async ({
   if (error)
     throw new CustomError(`Error on uploading file: ${error.message}`, 500);
 
-  return supabase.storage.from("kulinarya-bucket").getPublicUrl(fileName);
+  const result = supabase.storage
+    .from("kulinarya-bucket")
+    .getPublicUrl(fileName);
+
+  return result?.data?.publicUrl;
 };
 
 export default handleSupabaseUpload;

@@ -11,8 +11,7 @@ const recipeBaseSchema = z.object({
 
   foodCategory: z.enum(["dishes", "soup", "drinks", "desserts", "pastries"], {
     errorMap: () => ({
-      error:
-        "Invalid food category. Must be 'dishes', 'soup', 'drinks', 'desserts', or 'pastries'.",
+      message: "Food category is required",
     }),
   }),
 
@@ -52,12 +51,13 @@ const recipeBaseSchema = z.object({
   ingredients: z
     .array(
       z.object({
-        quantity: z.number().optional(),
-        unit: z
-          .enum(["g", "kg", "ml", "l", "cup", "tbsp", "tsp", "pcs"])
-          .optional(),
+        quantity: z.string().min(1, "Quantity is required"),
+        unit: z.enum(["g", "kg", "ml", "l", "cup", "tbsp", "tsp", "pcs"], {
+          errorMap: () => ({
+            message: "Ingredient unit is required",
+          }),
+        }),
         name: z.string().min(1, "Ingredient name is required"),
-        notes: z.string().optional(),
       })
     )
     .min(1, "Ingredients are required")

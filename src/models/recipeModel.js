@@ -167,7 +167,64 @@ RecipeSchema.statics.extractQueryParams = function (query) {
 };
 
 // Create Recipe
-RecipeSchema.statics.createRecipe = async function (recipeData) {
+RecipeSchema.statics.createRecipe = async function (req) {
+  // Parse ingredients and procedures if they are strings
+  req.body.ingredients = req.body.ingredients
+    ? JSON.parse(req.body.ingredients)
+    : [];
+  req.body.procedure = req.body.procedure ? JSON.parse(req.body.procedure) : [];
+
+  console.log("Parsed Ingredients:", req.body.ingredients);
+  console.log("Parsed Procedure:", req.body.procedure);
+  console.log("Request Files:", req.files);
+
+  const recipeMediaUrls = {};
+
+  // Supabase File Uploads
+  // Recipe Main Display Picture
+  if (req.files) {
+    if (req.files.mainPicture) {
+      recipeMediaUrls.mainPictureUrl = await handleSupabaseUpload({
+        file: req.files.mainPicture[0],
+        folder: "recipe_pictures",
+        allowedTypes: ["jpeg", "png"],
+        maxFileSize: 10 * 1024 * 1024, // 10mb
+      });
+    }
+
+    // Recipe Highlight Video
+    if (req.files.highlightVideo) {
+      recipeMediaUrls.videoUrl = await handleSupabaseUpload({
+        file: req.files.highlightVideo[0],
+        folder: "recipe_videos",
+        allowedTypes: ["mp4", "mov"],
+        maxFileSize: 50 * 1024 * 1024, // 50mb
+      });
+    }
+
+    // Additional Pictures
+    if (req.files.additionalPictures) {
+      recipeMediaUrls.additionalPicturesUrls = await Promise.all(
+        req.files.additionalPictures.map((file) =>
+          handleSupabaseUpload({
+            file,
+            folder: "recipe_pictures",
+            allowedTypes: ["jpeg", "png"],
+            maxFileSize: 10 * 1024 * 1024, // 10mb
+          })
+        )
+      );
+    }
+  }
+
+  console.log(recipeMediaUrls);
+
+  const recipeData = {
+    ...req.body,
+    byUser: req.user.userId,
+    ...recipeMediaUrls,
+  };
+
   createRecipeSchema.parse(recipeData);
 
   const newRecipe = await this.create(recipeData);
@@ -182,7 +239,7 @@ RecipeSchema.statics.createRecipe = async function (recipeData) {
 };
 
 //  Find and update Recipe
-// TODO: Test this especially the supabase file upload when implementing on frontend
+// TODO: Babaguhin to kapag sa update yung sa logic kung pano iuupdate yung picture sa supabase kapag tinaggal yung picture url sa database
 RecipeSchema.statics.updateRecipe = async function (req) {
   const recipeId = req.params.recipeId;
   const updates = req.body;
@@ -196,7 +253,7 @@ RecipeSchema.statics.updateRecipe = async function (req) {
         file: req.files.mainPicture[0],
         folder: "recipe_pictures",
         allowedTypes: ["jpeg", "png"],
-        maxFileSize: 2 * 1024 * 1024, // 2mb
+        maxFileSize: 10 * 1024 * 1024, // 10mb
       });
     }
 
@@ -206,7 +263,7 @@ RecipeSchema.statics.updateRecipe = async function (req) {
         file: req.files.highlightVideo[0],
         folder: "recipe_videos",
         allowedTypes: ["mp4", "mov"],
-        maxFileSize: 10 * 1024 * 1024, // 10mb
+        maxFileSize: 50 * 1024 * 1024, // 50mb
       });
     }
 
@@ -218,7 +275,7 @@ RecipeSchema.statics.updateRecipe = async function (req) {
             file,
             folder: "recipe_pictures",
             allowedTypes: ["jpeg", "png"],
-            maxFileSize: 2 * 1024 * 1024, // 2mb
+            maxFileSize: 10 * 1024 * 1024, // 10mb
           })
         )
       );
