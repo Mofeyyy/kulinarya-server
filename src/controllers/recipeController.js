@@ -4,9 +4,7 @@ import expressAsyncHandler from "express-async-handler";
 import Recipe from "../models/recipeModel.js";
 
 export const postNewRecipe = expressAsyncHandler(async (req, res) => {
-  const recipeData = { ...req.body, byUser: req.user.userId };
-
-  const result = await Recipe.createRecipe(recipeData);
+  const result = await Recipe.createRecipe(req);
 
   res.status(201).json({
     success: true,

@@ -20,14 +20,24 @@ import { fileUpload } from "../middleware/multerMiddleware.js";
 const router = express.Router();
 
 // Protected Routes
-router.post("/", authenticateUser, postNewRecipe);
+router.post(
+  "/",
+  authenticateUser,
+  fileUpload.fields([
+    { name: "mainPicture", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+    { name: "additionalPictures", maxCount: 5 },
+  ]),
+  postNewRecipe
+);
+
 router.patch(
   "/:recipeId",
   authenticateUser,
   fileUpload.fields([
-    { name: "mainImage", maxCount: 1 },
-    { name: "additionalImages", maxCount: 5 },
+    { name: "mainPicture", maxCount: 1 },
     { name: "video", maxCount: 1 },
+    { name: "additionalPictures", maxCount: 5 },
   ]),
   updateRecipe
 );
