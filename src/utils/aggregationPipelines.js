@@ -11,7 +11,15 @@ export const recipeAggregationPipeline = (
       let: { userId: "$byUser" },
       pipeline: [
         { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-        { $project: { firstName: 1, middleName: 1, lastName: 1 } },
+        {
+          $project: {
+            firstName: 1,
+            middleName: 1,
+            lastName: 1,
+            profilePictureUrl: 1,
+            bio: 1,
+          },
+        },
       ],
       as: "byUser",
     },
@@ -52,7 +60,12 @@ export const commentPreviewPipeline = [
       from: "comments",
       let: { recipeId: "$_id" },
       pipeline: [
-        { $match: { $expr: { $eq: ["$fromPost", "$$recipeId"] } } },
+        {
+          $match: {
+            $expr: { $eq: ["$fromPost", "$$recipeId"] },
+            $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+          },
+        },
         { $sort: { createdAt: -1 } },
         { $limit: 3 },
 
@@ -68,7 +81,7 @@ export const commentPreviewPipeline = [
                   firstName: 1,
                   middleName: 1,
                   lastName: 1,
-                  profilePicture: 1,
+                  profilePictureUrl: 1,
                 },
               },
             ],
@@ -81,12 +94,13 @@ export const commentPreviewPipeline = [
         {
           $project: {
             _id: 1,
-            text: 1,
+            content: 1,
             createdAt: 1,
+            "byUser._id": 1,
             "byUser.firstName": 1,
             "byUser.middleName": 1,
             "byUser.lastName": 1,
-            "byUser.profilePicture": 1,
+            "byUser.profilePictureUrl": 1,
           },
         },
       ],
@@ -101,19 +115,26 @@ export const reactionCountPipeline = [
       from: "reactions",
       let: { recipeId: "$_id" },
       pipeline: [
-        { $match: { $expr: { $eq: ["$fromPost", "$$recipeId"] } } },
-        { $group: { _id: "$reaction", count: { $sum: 1 } } },
-        { $project: { _id: 0, reaction: "$_id", count: 1 } },
+        {
+          $match: {
+            $expr: { $eq: ["$fromPost", "$$recipeId"] },
+            reaction: { $ne: null },
+          },
+        },
+        { $count: "total" },
       ],
-      as: "totalReactions",
+      as: "reactionData",
     },
   },
   {
     $set: {
       totalReactions: {
-        $ifNull: ["$totalReactions", []], // Fallback to an empty array
-      },
+        $ifNull: [{ $arrayElemAt: ["$reactionData.total", 0] }, 0],
+      }, // Extract count, fallback to 0
     },
+  },
+  {
+    $unset: "reactionData", // Remove the temporary array
   },
 ];
 

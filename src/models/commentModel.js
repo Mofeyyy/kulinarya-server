@@ -61,8 +61,12 @@ CommentSchema.statics.addComment = async function (req) {
     content,
   });
 
-  console.log("Creating new comment with data:", commentData);
-  const comment = await this.create(commentData);
+  let comment = await this.create(commentData);
+
+  comment = await this.findById(comment._id).populate(
+    "byUser",
+    "firstName lastName middleName profilePicture"
+  );
 
   if (!comment) {
     throw new CustomError("Failed to create comment", 500);
@@ -98,6 +102,8 @@ CommentSchema.statics.updateComment = async function (req) {
   const userInteractedId = req.user.userId;
   const userInteractedFirstName = req.user.firstName;
 
+  validateObjectId(commentId, "Comment");
+
   const comment = await this.findOne({ _id: commentId });
   if (!comment) throw new CustomError("Comment not found", 404);
 
@@ -107,6 +113,8 @@ CommentSchema.statics.updateComment = async function (req) {
 
   const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
+
+  console.log("New Comment:", newComment);
 
   updateCommentSchema.parse({ content: newComment });
 
@@ -151,6 +159,8 @@ CommentSchema.statics.softDeleteComment = async function (req) {
   if (!comment) throw new CustomError("Comment not found", 404);
 
   const recipeId = comment.fromPost;
+
+  validateObjectId(recipeId, "Recipe");
 
   const recipe = await Recipe.findById(recipeId).select("byUser").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);

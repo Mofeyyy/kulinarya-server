@@ -60,6 +60,6 @@ router.patch(
 // Public Routes (Viewing Recipes)
 router.get("/approved", getAllApprovedRecipes);
 router.get("/featured", getFeaturedRecipes);
-router.get("/:recipeId", getRecipeById);
+router.get("/:recipeId", authenticateUser.optional, getRecipeById);
 
 export default router;

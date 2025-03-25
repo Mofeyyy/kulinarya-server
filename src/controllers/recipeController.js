@@ -62,9 +62,7 @@ export const getPendingRecipes = expressAsyncHandler(async (req, res) => {
 });
 
 export const getRecipeById = expressAsyncHandler(async (req, res) => {
-  const { recipeId } = req.params;
-
-  const recipe = await Recipe.getRecipeById(recipeId);
+  const recipe = await Recipe.getRecipeById(req);
 
   res.status(200).json({
     success: true,
