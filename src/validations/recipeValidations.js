@@ -39,11 +39,12 @@ const recipeBaseSchema = z.object({
     .trim()
     .url("Invalid URL format")
     .startsWith("https://", "Video URL must start with 'https://'")
+    .nullable()
     .optional(),
 
   description: z
     .string()
-    .max(1000, "Description must not exceed 1000 characters")
+    .max(2000, "Description must not exceed 2000 characters")
     .trim()
     .optional(),
 
