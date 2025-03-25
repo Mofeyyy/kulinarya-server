@@ -427,7 +427,7 @@ RecipeSchema.statics.getRecipeById = async function (recipeId) {
 // Feature Recipe
 // ? How about unfeaturing a recipe, address this soon when implemented on front end
 // ? Can I do this as a toggle instead soon
-RecipeSchema.statics.featureRecipe = async function (recipeId) {
+RecipeSchema.statics.toggleFeatureRecipe = async function (recipeId) {
   validateObjectId(recipeId, "Recipe");
 
   const recipe = await this.findOne({ _id: recipeId }).populate(
@@ -440,20 +440,19 @@ RecipeSchema.statics.featureRecipe = async function (recipeId) {
   if (recipe.moderationInfo.status !== "approved")
     throw new CustomError("Only approved recipes can be featured", 400);
 
-  if (recipe.isFeatured)
-    throw new CustomError("Recipe is already featured", 400);
+  // Toggle isFeatured status
+  recipe.isFeatured = !recipe.isFeatured;
 
-  recipe.isFeatured = true;
-
-  return await recipe.save();
+  await recipe.save();
+  return recipe;
 };
 
 // Get Featured Recipes
 RecipeSchema.statics.getFeaturedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
-  // Count featured recipes
-  const featuredRecipeCount = this.aggregate([
+  // Count pending recipes
+  const featuredRecipeCount = await this.aggregate([
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "approved",
       isFeatured: true,
@@ -464,6 +463,7 @@ RecipeSchema.statics.getFeaturedRecipes = async function (query) {
 
   const totalFeaturedRecipes = featuredRecipeCount[0]?.total || 0;
 
+  // Fetch recipes data
   const featuredRecipesData = await this.aggregate([
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "approved",
@@ -477,6 +477,7 @@ RecipeSchema.statics.getFeaturedRecipes = async function (query) {
 
   return { featuredRecipesData, totalFeaturedRecipes, page, limit };
 };
+
 
 const Recipe = model("Recipe", RecipeSchema);
 export default Recipe;

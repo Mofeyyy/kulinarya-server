@@ -77,7 +77,7 @@ NotificationSchema.statics.getUserNotifications = async function (req) {
   } // If cursor of last notification fetched timestamp is provided, filter notifications created before that timestamp
 
   const notifications = await this.find(filter)
-    .populate("byUser", "profilePictureUrl")
+    .populate("byUser", "firstName lastName profilePictureUrl") // ✅ Include firstName and lastName
     .sort({ createdAt: -1 })
     .limit(Number(limit))
     .lean();
@@ -154,8 +154,13 @@ NotificationSchema.statics.handleNotification = async function ({
   const { recipeId, recipeOwnerId, recipeTitle } = fromPost;
   const { userInteractedId, userInteractedFirstName } = byUser;
 
-  // To prevent notifying self
-  if (isUserOwnsTheRecipe(recipeOwnerId, userInteractedId)) return;
+  console.log("Handling notification for:", { recipeId, recipeOwnerId, userInteractedId, type });
+
+  // Prevent self-notifications
+  if (recipeOwnerId.toString() === userInteractedId.toString()) {
+    console.log("User interacted with their own post. No notification needed.");
+    return;
+  }
 
   const existingNotification = await this.findOne({
     forUser: recipeOwnerId,
@@ -172,14 +177,18 @@ NotificationSchema.statics.handleNotification = async function ({
 
   // If notification exists, update or soft delete it
   if (existingNotification) {
+    console.log("Existing notification found. Updating...");
     return await updateExistingNotification(existingNotification, {
       content,
       isSoftDeleted,
     });
   }
 
-  // No need to create notification if soft deleted
-  if (isSoftDeleted) return;
+  // No need to create notification if marked for soft deletion
+  if (isSoftDeleted) {
+    console.log("Notification marked for soft deletion. Skipping creation.");
+    return;
+  }
 
   const notificationData = createNotificationSchema.parse({
     forUser: recipeOwnerId,
@@ -189,8 +198,10 @@ NotificationSchema.statics.handleNotification = async function ({
     content,
   });
 
+  console.log("Creating new notification with data:", notificationData);
   return await this.create(notificationData);
 };
+
 
 NotificationSchema.statics.createAnnouncementNotification = async function ({
   announcementId,

@@ -61,23 +61,36 @@ CommentSchema.statics.addComment = async function (req) {
     content,
   });
 
+  console.log("Creating new comment with data:", commentData);
   const comment = await this.create(commentData);
 
-  const notification = await Notification.handleNotification({
-    byUser: {
-      userInteractedId,
-      userInteractedFirstName,
-    },
-    fromPost: {
-      recipeId,
-      recipeOwnerId: recipe.byUser.toString(),
-      recipeTitle: recipe.title,
-    },
-    type: "comment",
-  });
+  if (!comment) {
+    throw new CustomError("Failed to create comment", 500);
+  }
+
+  let notification;
+  try {
+    console.log("Attempting to create notification...");
+    notification = await Notification.handleNotification({
+      byUser: {
+        userInteractedId,
+        userInteractedFirstName,
+      },
+      fromPost: {
+        recipeId,
+        recipeOwnerId: recipe.byUser.toString(),
+        recipeTitle: recipe.title,
+      },
+      type: "comment",
+    });
+    console.log("Notification created:", notification);
+  } catch (error) {
+    console.error("Error creating notification:", error);
+  }
 
   return { comment, notification };
 };
+
 
 CommentSchema.statics.updateComment = async function (req) {
   const { commentId } = req.params;

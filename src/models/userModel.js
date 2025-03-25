@@ -348,25 +348,64 @@ userSchema.statics.softDeleteUser = async function (req) {
 };
 
 // Static method for fetching user recipes
+// Static method for fetching user recipes with pagination
 userSchema.statics.getUserRecipesList = async function (req) {
   const { userId } = req.params;
+  const { search, origin, category, sortOrder = "newest", page = 1, limit = 10 } = req.query;
 
   validateObjectId(userId, "User ID");
 
-  const userRecipes = await Recipe.find({
+  // Calculate skip value for pagination
+  const skip = (page - 1) * limit;
+
+  // **Build Query Object**
+  const query = {
     byUser: userId,
-    deletedAt: { $in: [null, undefined] },
-  }).lean();
+    deletedAt: { $in: [null, undefined] }, // Exclude soft-deleted recipes
+  };
 
-  if (!userRecipes) throw new CustomError("User has no recipes", 404);
+  // **Apply Search Filter**
+  if (search?.trim()) {
+    query.$or = [
+      { title: { $regex: search.trim(), $options: "i" } },
+      { description: { $regex: search.trim(), $options: "i" } },
+    ];
+  }
 
-  const totalRecipes = await Recipe.countDocuments({
-    byUser: userId,
-    deletedAt: { $in: [null, undefined] }, // Exclude soft deleted recipes
-  });
 
-  return { userRecipes, totalRecipes };
+  if (category) {
+    query.foodCategory = { $regex: category, $options: "i" };
+  }
+  
+  if (origin) {
+    query.originProvince = { $regex: origin, $options: "i" };
+  }
+  
+  
+  console.log("🔍 Backend Query:", JSON.stringify(query, null, 2)); // ✅ Debugging
+
+  // **Set Sorting Order**
+  const sortOption = sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
+
+  // **Fetch Filtered Recipes**
+  const userRecipes = await Recipe.find(query)
+    .populate("byUser", "firstName lastName") // Populate User fields
+    .sort(sortOption) // Apply sorting
+    .skip(skip) // Skip for pagination
+    .limit(Number(limit)) // Limit number of recipes per page
+    .lean();
+
+  // **Count Total Recipes**
+  const totalRecipes = await Recipe.countDocuments(query);
+
+  // **Return Data**
+  return {
+    userRecipes,
+    totalRecipes,
+  };
 };
+
+
 
 userSchema.statics.initialLogin = async function () {
   console.log("Running initial login...");
