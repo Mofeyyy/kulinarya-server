@@ -1,17 +1,17 @@
 meta {
-  name: addRecipeReaction
+  name: toggleReaction
   type: http
   seq: 2
 }
 
 post {
-  url: http://localhost:4000/api/reactions/:recipeId
+  url: http://localhost:4000/api/reactions/:recipeId/toggle
   body: json
   auth: none
 }
 
 params:path {
-  recipeId: 
+  recipeId: 67d79aee609ad4c70caccf8d
 }
 
 body:json {

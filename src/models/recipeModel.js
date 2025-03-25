@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 // Imported Models
 import Moderation from "./moderationModel.js";
+import Reaction from "./reactionModel.js";
 
 // Imported Validations
 import {
@@ -394,30 +395,48 @@ RecipeSchema.statics.getPendingRecipes = async function (query) {
 };
 
 // Get Recipe by ID - For Viewing in Recipe Viewing Page
-RecipeSchema.statics.getRecipeById = async function (recipeId) {
+RecipeSchema.statics.getRecipeById = async function (req) {
+  const { recipeId } = req.params;
+  const userInteractedId = req.user.userId;
+
+  validateObjectId(userInteractedId, "User");
   validateObjectId(recipeId, "Recipe");
+
+  console.log("RecipeId:", recipeId);
 
   const recipe = await this.aggregate([
     ...recipeAggregationPipeline(
       {},
-      { _id: recipeId, "moderationInfo.status": "approved" },
-      [
-        ...commentPreviewPipeline,
-        ...commentCountPipeline,
-        ...reactionCountPipeline,
-      ]
+      {
+        _id: new mongoose.Types.ObjectId(recipeId),
+        "moderationInfo.status": "approved",
+      },
+      [...commentPreviewPipeline, ...commentCountPipeline],
+      [{ $limit: 1 }]
     ),
-  ]).lean();
+  ]).then((res) => res[0] || null);
 
   if (!recipe) throw new CustomError("Recipe not found", 404);
 
   if (recipe.deletedAt)
     throw new CustomError("Recipe has already been deleted", 404);
 
-  return recipe;
+  const userReaction = await Reaction.findOne({
+    fromPost: recipeId,
+    byUser: userInteractedId,
+    deletedAt: { $in: [null, undefined] },
+  })
+    .select("reaction")
+    .lean();
+  recipe.userReaction = userReaction;
 
-  // TODO: Aggregate comments and reactions here: 3 comments for preview and reactions counts for preview, other fetching will be done on a seperate route GET comments and reactions
-  // TODO: TEST THIS
+  const totalReactions = await Reaction.countDocuments({
+    fromPost: recipeId,
+    deletedAt: { $in: [null, undefined] },
+  });
+  recipe.totalReactions = totalReactions;
+
+  return recipe;
 };
 
 // Feature Recipe
