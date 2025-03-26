@@ -15,6 +15,7 @@ import {
 import CustomError from "../utils/customError.js";
 import { validateObjectId } from "../utils/validators.js";
 import handleSupabaseUpload from "../utils/handleSupabaseUpload.js";
+import deleteSupabaseFile from "../utils/deleteSupabaseFile.js";
 
 // Imported Aggregation Pipelines
 import {
@@ -240,51 +241,110 @@ RecipeSchema.statics.createRecipe = async function (req) {
 };
 
 //  Find and update Recipe
-// TODO: Babaguhin to kapag sa update yung sa logic kung pano iuupdate yung picture sa supabase kapag tinaggal yung picture url sa database
 RecipeSchema.statics.updateRecipe = async function (req) {
+  req.body.ingredients = req.body.ingredients
+    ? JSON.parse(req.body.ingredients)
+    : [];
+  req.body.procedure = req.body.procedure ? JSON.parse(req.body.procedure) : [];
+  req.body.additionalPicturesUrls = req.body.additionalPicturesUrls
+    ? JSON.parse(req.body.additionalPicturesUrls)
+    : [];
+
+  console.log("Parsed Ingredients:", req.body.ingredients);
+  console.log("Parsed Procedure:", req.body.procedure);
+  console.log("Parsed Additional Pictures:", req.body.additionalPicturesUrls);
+  console.log("Request Files:", req.files);
+
   const recipeId = req.params.recipeId;
   const updates = req.body;
   const userId = req.user.userId;
 
-  // Supabase File Uploads
-  // Recipe Main Display Picture
+  validateObjectId(recipeId, "Recipe ID");
+
+  const existingRecipe = await this.findOne({ _id: recipeId, byUser: userId })
+    .select("mainPictureUrl videoUrl additionalPicturesUrls")
+    .lean();
+
+  if (!existingRecipe) throw new CustomError("Recipe Not Found!", 404);
+
+  // Supabase File Uploads & Old File Deletion
   if (req.files) {
     if (req.files.mainPicture) {
+      if (existingRecipe.mainPictureUrl) {
+        await deleteSupabaseFile(existingRecipe.mainPictureUrl);
+      }
+
       updates.mainPictureUrl = await handleSupabaseUpload({
         file: req.files.mainPicture[0],
         folder: "recipe_pictures",
         allowedTypes: ["jpeg", "png"],
-        maxFileSize: 10 * 1024 * 1024, // 10mb
+        maxFileSize: 10 * 1024 * 1024, // 10MB
       });
     }
 
-    // Recipe Highlight Video
-    if (req.files.highlightVideo) {
+    if (req.files.video) {
+      if (existingRecipe.videoUrl) {
+        await deleteSupabaseFile(existingRecipe.videoUrl);
+      }
+
       updates.videoUrl = await handleSupabaseUpload({
-        file: req.files.highlightVideo[0],
+        file: req.files.video[0],
         folder: "recipe_videos",
         allowedTypes: ["mp4", "mov"],
-        maxFileSize: 50 * 1024 * 1024, // 50mb
+        maxFileSize: 50 * 1024 * 1024, // 50MB
       });
-    }
-
-    // Additional Pictures
-    if (req.files.additionalPictures) {
-      updates.additionalPicturesUrls = await Promise.all(
-        req.files.additionalPictures.map((file) =>
-          handleSupabaseUpload({
-            file,
-            folder: "recipe_pictures",
-            allowedTypes: ["jpeg", "png"],
-            maxFileSize: 10 * 1024 * 1024, // 10mb
-          })
-        )
-      );
     }
   }
 
+  // If user delete the video
+  if (
+    (updates.video === undefined || updates.video === null) &&
+    existingRecipe.videoUrl
+  ) {
+    await deleteSupabaseFile(existingRecipe.videoUrl);
+    updates.videoUrl = null;
+  }
+
+  // Handle Additional Pictures
+  if (
+    Array.isArray(updates.additionalPicturesUrls) ||
+    req.files?.additionalPictures
+  ) {
+    const existingPicturesUrls = existingRecipe.additionalPicturesUrls || [];
+    const keptPicturesUrls =
+      updates.additionalPicturesUrls?.filter((url) =>
+        existingPicturesUrls.includes(url)
+      ) || []; // Keep the existing ones
+
+    const removedPictures = existingPicturesUrls.filter(
+      (url) => !keptPicturesUrls.includes(url)
+    );
+
+    if (removedPictures.length > 0) {
+      await Promise.all(removedPictures.map((url) => deleteSupabaseFile(url)));
+    }
+
+    // If there are new uploaded files, process them
+    const uploadedPictureUrls = req.files?.additionalPictures
+      ? await Promise.all(
+          req.files.additionalPictures.map((file) =>
+            handleSupabaseUpload({
+              file,
+              folder: "recipe_pictures",
+              allowedTypes: ["jpeg", "png"],
+              maxFileSize: 10 * 1024 * 1024, // 10MB
+            })
+          )
+        )
+      : [];
+
+    updates.additionalPicturesUrls = [
+      ...keptPicturesUrls,
+      ...uploadedPictureUrls,
+    ];
+  }
+
   updateRecipeSchema.parse(updates);
-  validateObjectId(recipeId, "Recipe");
 
   const updatedRecipe = await this.findOneAndUpdate(
     {
@@ -401,9 +461,8 @@ RecipeSchema.statics.getPendingRecipes = async function (query) {
 // Get Recipe by ID - For Viewing in Recipe Viewing Page
 RecipeSchema.statics.getRecipeById = async function (req) {
   const { recipeId } = req.params;
-  const userInteractedId = req.user.userId;
+  const userInteractedId = req.user?.userId;
 
-  validateObjectId(userInteractedId, "User");
   validateObjectId(recipeId, "Recipe");
 
   console.log("RecipeId:", recipeId);
@@ -425,14 +484,18 @@ RecipeSchema.statics.getRecipeById = async function (req) {
   if (recipe.deletedAt)
     throw new CustomError("Recipe has already been deleted", 404);
 
-  const userReaction = await Reaction.findOne({
-    fromPost: recipeId,
-    byUser: userInteractedId,
-    deletedAt: { $in: [null, undefined] },
-  })
-    .select("reaction")
-    .lean();
-  recipe.userReaction = userReaction;
+  if (userInteractedId) {
+    validateObjectId(userInteractedId, "User");
+
+    const userReaction = await Reaction.findOne({
+      fromPost: recipeId,
+      byUser: userInteractedId,
+      deletedAt: { $in: [null, undefined] },
+    })
+      .select("reaction")
+      .lean();
+    recipe.userReaction = userReaction;
+  }
 
   const totalReactions = await Reaction.countDocuments({
     fromPost: recipeId,
