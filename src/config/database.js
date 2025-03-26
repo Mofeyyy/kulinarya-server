@@ -1,10 +1,5 @@
 import { connect } from "mongoose";
-import "dotenv/config";
-
-const MONGO_URI =
-  process.env.NODE_ENV === "prod"
-    ? process.env.MONGO_URI_PROD
-    : process.env.MONGO_URI_DEV;
+import { MONGO_URI } from "../utils/environmentConditions.js";
 
 const connectDB = async () => {
   try {

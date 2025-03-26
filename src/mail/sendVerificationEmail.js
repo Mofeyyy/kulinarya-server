@@ -1,10 +1,5 @@
 import transporter from "../utils/emailTransporter.js";
-import "dotenv/config";
-
-const CLIENT_URL =
-  process.env.NODE_ENV === "prod"
-    ? process.env.CLIENT_URL_PROD
-    : process.env.CLIENT_URL_DEV;
+import { CLIENT_URL } from "../utils/environmentConditions.js";
 
 const sendVerificationEmail = async (user) => {
   try {

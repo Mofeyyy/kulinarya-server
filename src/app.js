@@ -19,6 +19,9 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import initialLogin from "./middleware/initialLogin.js";
 
+// Imported Utils
+import { CLIENT_URL } from "./utils/environmentConditions.js";
+
 //  ---------------------------------------------------------------
 
 const app = express();
@@ -31,7 +34,7 @@ app.use(cookieParser()); // Cookie Parser
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [CLIENT_URL],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
