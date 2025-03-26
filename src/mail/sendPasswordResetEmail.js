@@ -1,16 +1,21 @@
 // Imported Utility Helper Functions
 import transporter from "../utils/emailTransporter.js";
 
+const CLIENT_URL =
+  NODE_ENV === "prod"
+    ? process.env.CLIENT_URL_PROD
+    : process.env.CLIENT_URL_DEV;
+
 const sendPasswordResetEmail = async (user) => {
   try {
     // Generate Password Reset Token with 15mins expiry
     const token = user.generateToken("passwordReset");
 
-    const resetPasswordLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+    const resetPasswordLink = `${CLIENT_URL}/reset-password?token=${token}`;
 
     // Send to User Email Address
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.GMAIL_USER,
       to: user.email,
       subject: "Password Reset",
       html: `<p>Click the link to reset your password: <a href="${resetPasswordLink}">Reset Your Password</a></p>`,

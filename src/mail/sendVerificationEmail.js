@@ -1,11 +1,16 @@
 import transporter from "../utils/emailTransporter.js";
 
+const CLIENT_URL =
+  NODE_ENV === "prod"
+    ? process.env.CLIENT_URL_PROD
+    : process.env.CLIENT_URL_DEV;
+
 const sendVerificationEmail = async (user) => {
   try {
     // Generate Verification Token with 1h expiry
     const token = user.generateToken("emailVerification");
 
-    const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+    const verificationLink = `${CLIENT_URL}/verify-email?token=${token}`;
 
     const emailHtml = `
     <!DOCTYPE html>
@@ -105,7 +110,7 @@ const sendVerificationEmail = async (user) => {
 
     // Send to User Email Address
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.GMAIL_USER,
       to: user.email,
       subject: "Verify Your Email - Kulinarya",
       html: emailHtml,

@@ -118,8 +118,8 @@ userSchema.methods.generateAuthToken = function (res) {
 
   res.cookie("kulinarya_auth_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "prod",
+    sameSite: process.env.NODE_ENV === "prod" ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
@@ -351,7 +351,14 @@ userSchema.statics.softDeleteUser = async function (req) {
 // Static method for fetching user recipes with pagination
 userSchema.statics.getUserRecipesList = async function (req) {
   const { userId } = req.params;
-  const { search, origin, category, sortOrder = "newest", page = 1, limit = 10 } = req.query;
+  const {
+    search,
+    origin,
+    category,
+    sortOrder = "newest",
+    page = 1,
+    limit = 10,
+  } = req.query;
 
   validateObjectId(userId, "User ID");
 
@@ -372,20 +379,19 @@ userSchema.statics.getUserRecipesList = async function (req) {
     ];
   }
 
-
   if (category) {
     query.foodCategory = { $regex: category, $options: "i" };
   }
-  
+
   if (origin) {
     query.originProvince = { $regex: origin, $options: "i" };
   }
-  
-  
+
   console.log("🔍 Backend Query:", JSON.stringify(query, null, 2)); // ✅ Debugging
 
   // **Set Sorting Order**
-  const sortOption = sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
+  const sortOption =
+    sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
 
   // **Fetch Filtered Recipes**
   const userRecipes = await Recipe.find(query)
@@ -404,8 +410,6 @@ userSchema.statics.getUserRecipesList = async function (req) {
     totalRecipes,
   };
 };
-
-
 
 userSchema.statics.initialLogin = async function () {
   console.log("Running initial login...");
@@ -431,8 +435,9 @@ userSchema.statics.initialLogin = async function () {
 userSchema.statics.getTopSharers = async function (limit = 4) {
   const topSharers = await this.aggregate([
     {
-      $match: { 
-        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] } // Exclude deleted users
+      $match: {
+        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+      }, // Exclude deleted users
     },
     {
       $lookup: {
@@ -476,7 +481,6 @@ userSchema.statics.getTopSharers = async function (limit = 4) {
 
   return topSharers;
 };
-
 
 userSchema.statics.getAllUsers = async function () {
   const users = await this.find({ deletedAt: { $in: [null, undefined] } })
