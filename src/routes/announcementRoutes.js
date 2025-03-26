@@ -7,6 +7,7 @@ import {
   updateAnnouncement,
   softDeleteAnnouncement,
   getAnnouncements,
+  getSpecificAnnouncementById
 } from "../controllers/announcementController.js";
 
 // Imported Middleware
@@ -20,9 +21,11 @@ const allowedRoles = ["admin", "creator"];
 
 // Routes
 router.post("/create", authenticateUser, checkRole(allowedRoles), createAnnouncement); // Add Announcement
+
 router.patch("/:announcementId", authenticateUser, checkRole(allowedRoles), updateAnnouncement); // Update Announcement
 router.delete("/:announcementId/soft-delete", authenticateUser, checkRole(allowedRoles), softDeleteAnnouncement); // Soft Delete Announcement
 router.get("/", authenticateUser, checkRole(allowedRoles), getAnnouncements);
 router.get("/activeAnnouncements", getAllActiveAnnouncements); // Fetch All Active Announcements (Public)
+router.get("/:announcementId", authenticateUser, getSpecificAnnouncementById);
 
 export default router;

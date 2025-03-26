@@ -78,7 +78,6 @@ ReactionSchema.statics.fetchAllReactions = async function (req) {
   return { reactions, totalReactions, cursor: newCursor };
 };
 
-
 ReactionSchema.statics.toggleReaction = async function (req) {
   const { recipeId } = req.params;
   const newReaction = req.body.reaction;
@@ -154,6 +153,92 @@ ReactionSchema.statics.toggleReaction = async function (req) {
 
   return { reactionData, notificationData, isNewReaction, isSoftDeleted };
 };
+
+// Fetch the top reacted post
+ReactionSchema.statics.getTopReactedPost = async function () {
+  const startOfMonth = new Date(new Date().setDate(1)); // First day of the current month
+  const endOfMonth = new Date(); // Today's date
+
+  const topReactedPosts = await this.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+        deletedAt: null // Ensures only active reactions are counted
+      }
+    },
+    {
+      $group: {
+        _id: "$fromPost",
+        totalReactions: { $sum: 1 }
+      }
+    },
+    {
+      $lookup: {
+        from: "recipes",
+        localField: "_id",
+        foreignField: "_id",
+        as: "recipe"
+      }
+    },
+    { $unwind: "$recipe" },
+    {
+      $lookup: {
+        from: "users",
+        localField: "recipe.byUser",
+        foreignField: "_id",
+        as: "user"
+      }
+    },
+    { $unwind: "$user" },
+    {
+      $lookup: {
+        from: "comments",
+        let: { postId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$fromPost", "$$postId"] } } },
+          { $count: "totalComments" }
+        ],
+        as: "comments"
+      }
+    },
+    {
+      $lookup: {
+        from: "postviews",
+        let: { postId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$fromPost", "$$postId"] } } },
+          { $count: "totalViews" }
+        ],
+        as: "views"
+      }
+    },
+    {
+      $addFields: {
+        totalComments: { $ifNull: [{ $arrayElemAt: ["$comments.totalComments", 0] }, 0] },
+        totalViews: { $ifNull: [{ $arrayElemAt: ["$views.totalViews", 0] }, 0] }
+      }
+    },
+    {
+      $project: {
+        _id: "$recipe._id",
+        title: "$recipe.title",
+        mainPictureUrl: "$recipe.mainPictureUrl", // Added mainPictureUrl
+        totalReactions: 1,
+        totalComments: 1,
+        totalViews: 1,
+        "byUser.firstName": "$user.firstName",
+        "byUser.lastName": "$user.lastName"
+      }
+    },
+    { $sort: { totalReactions: -1 } },
+    { $limit: 10 }
+  ]);
+
+  return { topReactedPosts };
+};
+
+
+
 
 const Reaction = model("Reaction", ReactionSchema);
 export default Reaction;

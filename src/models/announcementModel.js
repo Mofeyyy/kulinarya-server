@@ -87,5 +87,14 @@ AnnouncementSchema.statics.softDeleteAnnouncement = async function (req) {
   await announcement.save();
 };
 
+AnnouncementSchema.statics.getSpecificAnnouncementById = async function (req) {
+  const { announcementId } = req.params;
+
+  const announcement = await this.findOne({ _id: announcementId, deletedAt: null });
+  if (!announcement) throw new CustomError("Announcement not found", 404);
+
+  return { announcement };
+};
+
 const Announcement = model("Announcement", AnnouncementSchema);
 export default Announcement;

@@ -91,6 +91,9 @@ PostViewSchema.statics.getPostViews = async function (req) {
   return { recipeId, views };
 };
 
+
+
+
 PostViewSchema.statics.getTopPostViews = async function () {
   const startOfMonth = new Date(new Date().setDate(1)); // First day of the current month
   const endOfMonth = new Date(); // Today's date
@@ -109,27 +112,59 @@ PostViewSchema.statics.getTopPostViews = async function () {
     },
     {
       $lookup: {
-        from: "recipes", // Collection name of the Recipe model
+        from: "recipes",
         localField: "_id",
         foreignField: "_id",
         as: "recipe"
       }
     },
+    { $unwind: "$recipe" },
+    {
+      $lookup: {
+        from: "users",
+        localField: "recipe.byUser",
+        foreignField: "_id",
+        as: "user"
+      }
+    },
+    { $unwind: "$user" },
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "fromPost",
+        as: "comments"
+      }
+    },
+    {
+      $lookup: {
+        from: "reactions",
+        localField: "_id",
+        foreignField: "fromPost",
+        as: "reactions"
+      }
+    },
     {
       $project: {
-        _id: 1,  // Keep _id as the first field
-        recipeTitle: { $arrayElemAt: ["$recipe.title", 0] }, // Place recipeTitle second
-        totalViews: 1 // Place totalViews last
+        _id: "$recipe._id",
+        title: "$recipe.title",
+        mainPictureUrl: "$recipe.mainPictureUrl", // Added mainPictureUrl
+        totalViews: 1,
+        totalComments: { $size: "$comments" },
+        totalReactions: { $size: "$reactions" },
+        "byUser.firstName": "$user.firstName",
+        "byUser.lastName": "$user.lastName"
       }
     },
     { $sort: { totalViews: -1 } },
-    { $limit: 10 } // Show top 10 most viewed posts
+    { $limit: 10 }
   ]);
-
-  console.log(topViewedPosts);
 
   return { topViewedPosts };
 };
+
+
+
 
 
 

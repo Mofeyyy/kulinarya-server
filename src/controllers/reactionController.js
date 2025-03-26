@@ -33,3 +33,14 @@ export const toggleReaction = expressAsyncHandler(async (req, res) => {
     notification,
   });
 });
+
+export const getTopReactedPost = expressAsyncHandler(async (req, res) => {
+  const { timeframe } = req.query; // Accepts 'week' or 'month'
+
+  try {
+    const topReactedPost = await Reaction.getTopReactedPost(timeframe);
+    res.status(200).json({ success: true, data: topReactedPost });
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+});

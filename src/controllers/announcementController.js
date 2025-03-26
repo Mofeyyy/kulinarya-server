@@ -58,3 +58,14 @@ export const softDeleteAnnouncement = expressAsyncHandler(async (req, res) => {
     message: "Announcement Deleted Successfully",
   });
 });
+
+export const getSpecificAnnouncementById = expressAsyncHandler(async (req, res) => {
+  const result = await Announcement.getSpecificAnnouncementById(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Announcement Fetched Successfully",
+    ...result,
+  });
+});
