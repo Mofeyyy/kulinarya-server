@@ -1,5 +1,6 @@
 import supabase from "./supabase.js";
 import CustomError from "./customError.js";
+import "dotenv/config";
 
 const deleteSupabaseFile = async (fileUrl) => {
   if (!fileUrl) throw new CustomError("File URL is required", 400);

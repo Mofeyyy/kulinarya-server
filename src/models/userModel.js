@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import "dotenv/config";
 
 // Imported Utility Functions
 import { verifyToken } from "../utils/tokenUtils.js";

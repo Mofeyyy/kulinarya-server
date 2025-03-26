@@ -1,4 +1,5 @@
 import { connect } from "mongoose";
+import "dotenv/config";
 
 const MONGO_URI =
   process.env.NODE_ENV === "prod"
@@ -7,6 +8,7 @@ const MONGO_URI =
 
 const connectDB = async () => {
   try {
+    console.log(MONGO_URI);
     await connect(MONGO_URI);
     console.log("MongoDB Connected");
   } catch (error) {
