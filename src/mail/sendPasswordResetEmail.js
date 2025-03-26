@@ -2,7 +2,7 @@
 import transporter from "../utils/emailTransporter.js";
 
 const CLIENT_URL =
-  NODE_ENV === "prod"
+  process.env.NODE_ENV === "prod"
     ? process.env.CLIENT_URL_PROD
     : process.env.CLIENT_URL_DEV;
 
