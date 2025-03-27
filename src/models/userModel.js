@@ -433,13 +433,14 @@ userSchema.statics.initialLogin = async function () {
   }
 };
 
-userSchema.statics.getTopSharers = async function (limit = 4) {
+userSchema.statics.getTopSharers = async function () {
   const topSharers = await this.aggregate([
     {
       $match: {
-        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+        $or: [{ deletedAt: null }, { deletedAt: { $in: [null, undefined] } }],
       }, // Exclude deleted users
     },
+
     {
       $lookup: {
         from: "recipes",
@@ -448,28 +449,52 @@ userSchema.statics.getTopSharers = async function (limit = 4) {
         as: "recipes",
       },
     },
+
     {
-      $addFields: {
-        totalRecipes: {
-          $size: {
-            $filter: {
-              input: "$recipes",
-              as: "recipe",
-              cond: { $eq: ["$$recipe.status", "approved"] }, // Only count approved recipes
-            },
-          },
-        },
+      $unwind: "$recipes", // Flatten recipes array
+    },
+
+    {
+      $lookup: {
+        from: "moderations",
+        localField: "recipes._id",
+        foreignField: "forPost",
+        as: "moderationInfo",
       },
     },
+
+    {
+      $unwind: "$moderationInfo", // Flatten moderations array
+    },
+
+    {
+      $match: {
+        "moderationInfo.status": "approved", // Ensure only approved recipes count
+      },
+    },
+
+    {
+      $group: {
+        _id: "$_id",
+        firstName: { $first: "$firstName" },
+        lastName: { $first: "$lastName" },
+        profilePictureUrl: { $first: "$profilePictureUrl" },
+        totalRecipes: { $sum: 1 }, // Count approved recipes
+      },
+    },
+
     {
       $match: { totalRecipes: { $gt: 0 } }, // Only users with at least 1 approved recipe
     },
+
     {
       $sort: { totalRecipes: -1 }, // Sort by most approved recipes
     },
+
     {
-      $limit: limit, // Limit to top sharers
+      $limit: 5, // Limit to top 5 sharers
     },
+
     {
       $project: {
         firstName: 1,

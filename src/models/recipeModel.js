@@ -401,7 +401,7 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "approved",
     }),
-    { $count: "total" }, 
+    { $count: "total" },
   ]);
 
   const totalApprovedRecipes = approvedRecipeCount[0]?.total || 0;
@@ -424,7 +424,7 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(totalApprovedRecipes / limit), // 
+      totalPages: Math.ceil(totalApprovedRecipes / limit), //
     },
   };
 };
@@ -560,6 +560,71 @@ RecipeSchema.statics.getFeaturedRecipes = async function (query) {
   return { featuredRecipesData, totalFeaturedRecipes, page, limit };
 };
 
+RecipeSchema.statics.getTopEngagedRecipes = async function () {
+  const topEngagedRecipes = await this.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "byUser",
+        foreignField: "_id",
+        as: "userDetails",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "reactions",
+        localField: "_id",
+        foreignField: "fromPost",
+        as: "reactions",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "fromPost",
+        as: "comments",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "postviews",
+        localField: "_id",
+        foreignField: "fromPost",
+        as: "postViews",
+      },
+    },
+
+    {
+      $project: {
+        mainPictureUrl: 1,
+        title: 1,
+        byUser: {
+          firstName: { $arrayElemAt: ["$userDetails.firstName", 0] },
+          lastName: { $arrayElemAt: ["$userDetails.lastName", 0] },
+        },
+        totalReactions: { $size: "$reactions" },
+        totalComments: { $size: "$comments" },
+        totalViews: { $size: "$postViews" },
+        totalEngagement: {
+          $sum: [
+            { $size: "$reactions" },
+            { $size: "$comments" },
+            { $size: "$postViews" },
+          ],
+        },
+      },
+    },
+
+    { $sort: { totalEngagement: -1 } },
+    { $limit: 5 },
+  ]);
+
+  return topEngagedRecipes;
+};
 
 const Recipe = model("Recipe", RecipeSchema);
 export default Recipe;

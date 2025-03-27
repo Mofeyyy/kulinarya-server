@@ -95,3 +95,14 @@ export const getFeaturedRecipes = expressAsyncHandler(async (req, res) => {
     ...result,
   });
 });
+
+export const getTopEngagedRecipes = expressAsyncHandler(async (_, res) => {
+  const topEngagedRecipes = await Recipe.getTopEngagedRecipes();
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Top Engaged Recipes Fetched Successfully",
+    topEngagedRecipes,
+  });
+});

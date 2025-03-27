@@ -19,8 +19,6 @@ export const getAllUsers = expressAsyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
-
-
 export const updateUserData = expressAsyncHandler(async (req, res) => {
   const updatedUserData = await User.updateUserData(req);
 
@@ -49,14 +47,13 @@ export const getUserRecipes = expressAsyncHandler(async (req, res) => {
     success: true,
     statusCode: 200,
     message: "User Recipes Fetched Successfully",
-    totalRecipes, 
-    userRecipes
+    totalRecipes,
+    userRecipes,
   });
 });
 
 export const getTopSharers = expressAsyncHandler(async (req, res) => {
-  const limit = req.query.limit ? parseInt(req.query.limit) : 4; 
-  const topSharers = await User.getTopSharers(limit);
+  const topSharers = await User.getTopSharers();
 
   res.status(200).json({
     success: true,
@@ -65,6 +62,3 @@ export const getTopSharers = expressAsyncHandler(async (req, res) => {
     topSharers,
   });
 });
-
-
-

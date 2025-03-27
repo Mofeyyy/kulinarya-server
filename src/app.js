@@ -2,6 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
+import morgan from "morgan";
 
 // Imported Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -41,10 +42,7 @@ app.use(
   })
 ); // For accessing or allowing backend on a different domain
 
-app.use((req, _, next) => {
-  console.log(req.path, req.method);
-  next();
-}); // Log all requests in console
+app.use(morgan(process.env.NODE_ENV === "prod" ? "tiny" : "dev"));
 
 app.get("/", initialLogin, (_, res) => {
   res.send("Backend is running");
@@ -68,8 +66,8 @@ app.use((_, res) => res.status(404).json({ error: "Not Found" }));
 
 app.use(errorHandler); // Global Error Handler
 
-setInterval(() => {
-  console.log("Backend is running");
-}, 30000);
+// setInterval(() => {
+//   console.log("Backend is running");
+// }, 30000);
 
 export default app;

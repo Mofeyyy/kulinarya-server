@@ -10,6 +10,7 @@ import {
   getPendingRecipes,
   toggleFeatureRecipe,
   softDeleteRecipe,
+  getTopEngagedRecipes,
 } from "../controllers/recipeController.js";
 
 // Imported Middlewares
@@ -60,6 +61,7 @@ router.patch(
 // Public Routes (Viewing Recipes)
 router.get("/approved", getAllApprovedRecipes);
 router.get("/featured", getFeaturedRecipes);
+router.get("/top-engaged", getTopEngagedRecipes);
 router.get("/:recipeId", authenticateUser.optional, getRecipeById);
 
 export default router;
