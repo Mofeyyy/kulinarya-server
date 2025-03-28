@@ -49,30 +49,30 @@ PostViewSchema.statics.trackView = async function (req) {
     byGuest: finalByGuest,
   });
 
-  // Set the time limit (e.g., 1 hour)
-  const oneHourAgo = new Date();
-  oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+  // Set the time limit (e.g., 1 day)
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
   let existingView;
 
   if (finalViewType === "user") {
-    // Check if user has already viewed this post within the last hour
+    // Check if user has already viewed this post within the last day
     existingView = await this.findOne({
       fromPost,
       byUser: finalByUser,
-      createdAt: { $gte: oneHourAgo },
+      createdAt: { $gte: oneDayAgo },
     });
   } else {
-    // Check if guest (IP) has already viewed this post within the last hour
+    // Check if guest (IP) has already viewed this post within the last day
     existingView = await this.findOne({
       fromPost,
       byGuest: finalByGuest,
-      createdAt: { $gte: oneHourAgo },
+      createdAt: { $gte: oneDayAgo },
     });
   }
 
   if (existingView) {
-    throw new CustomError("View already recorded within the last hour", 429); // 429 = Too Many Requests
+    throw new CustomError("View already recorded within the last day", 429); // 429 = Too Many Requests
   }
 
   // Create the post view record
