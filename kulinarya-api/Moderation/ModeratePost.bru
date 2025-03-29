@@ -1,0 +1,21 @@
+meta {
+  name: ModeratePost
+  type: http
+  seq: 1
+}
+
+patch {
+  url: http://localhost:4000/api/moderations/:moderationId
+  body: json
+  auth: inherit
+}
+
+params:path {
+  moderationId: 67e82f4847d34c69fe46a551
+}
+
+body:json {
+  {
+    "status": "approved"
+  }
+}

@@ -97,6 +97,7 @@ const RecipeSchema = new Schema(
       default: null,
     },
 
+    // ? Bakit nilagyan ng ganito dito para saan?
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -189,8 +190,8 @@ RecipeSchema.statics.createRecipe = async function (req) {
       recipeMediaUrls.mainPictureUrl = await handleSupabaseUpload({
         file: req.files.mainPicture[0],
         folder: "recipe_pictures",
-        allowedTypes: ["jpeg", "png"],
-        maxFileSize: 10 * 1024 * 1024, // 10mb
+        allowedTypes: ["jpeg", "png", "webp"],
+        maxFileSize: 2 * 1024 * 1024, // 2mb
       });
     }
 
@@ -211,8 +212,9 @@ RecipeSchema.statics.createRecipe = async function (req) {
           handleSupabaseUpload({
             file,
             folder: "recipe_pictures",
-            allowedTypes: ["jpeg", "png"],
-            maxFileSize: 10 * 1024 * 1024, // 10mb
+            allowedTypes: ["jpeg", "png", "webp"],
+
+            maxFileSize: 2 * 1024 * 1024, // 2mb
           })
         )
       );
@@ -277,8 +279,8 @@ RecipeSchema.statics.updateRecipe = async function (req) {
       updates.mainPictureUrl = await handleSupabaseUpload({
         file: req.files.mainPicture[0],
         folder: "recipe_pictures",
-        allowedTypes: ["jpeg", "png"],
-        maxFileSize: 10 * 1024 * 1024, // 10MB
+        allowedTypes: ["jpeg", "png", "webp"],
+        maxFileSize: 2 * 1024 * 1024, // 2MB
       });
     }
 
@@ -331,8 +333,8 @@ RecipeSchema.statics.updateRecipe = async function (req) {
             handleSupabaseUpload({
               file,
               folder: "recipe_pictures",
-              allowedTypes: ["jpeg", "png"],
-              maxFileSize: 10 * 1024 * 1024, // 10MB
+              allowedTypes: ["jpeg", "png", "webp"],
+              maxFileSize: 2 * 1024 * 1024, // 2MB
             })
           )
         )
