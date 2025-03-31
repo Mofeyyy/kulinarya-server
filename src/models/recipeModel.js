@@ -23,6 +23,7 @@ import {
   commentCountPipeline,
   commentPreviewPipeline,
   reactionCountPipeline,
+  postViewCountPipeline,
 } from "../utils/aggregationPipelines.js";
 
 const RecipeSchema = new Schema(
@@ -408,13 +409,30 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
 
   const totalApprovedRecipes = approvedRecipeCount[0]?.total || 0;
 
-  // ✅ Fetch Approved Recipes (WITH Pagination)
+  // Fetch with pagination
   const approvedRecipesData = await this.aggregate([
     ...recipeAggregationPipeline(
       filter,
       { "moderationInfo.status": "approved" },
-      [...commentCountPipeline, ...reactionCountPipeline]
+      [
+        ...commentCountPipeline,
+        ...reactionCountPipeline,
+        ...postViewCountPipeline,
+      ]
     ),
+    {
+      $project: {
+        title: 1,
+        "byUser._id": 1,
+        "byUser.firstName": 1,
+        "byUser.lastName": 1,
+        mainPictureUrl: 1,
+        totalComments: 1,
+        totalReactions: 1,
+        totalViews: 1,
+      },
+    },
+
     { $sort: { ...sortOrder } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
@@ -426,7 +444,7 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(totalApprovedRecipes / limit), //
+      totalPages: Math.ceil(totalApprovedRecipes / limit),
     },
   };
 };

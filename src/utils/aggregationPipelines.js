@@ -159,3 +159,25 @@ export const commentCountPipeline = [
   },
   { $unset: "commentsCount" },
 ];
+
+export const postViewCountPipeline = [
+  {
+    $lookup: {
+      from: "postviews",
+      let: { recipeId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$fromPost", "$$recipeId"] } } },
+        { $count: "totalViews" },
+      ],
+      as: "viewsCount",
+    },
+  },
+  {
+    $set: {
+      totalViews: {
+        $ifNull: [{ $arrayElemAt: ["$viewsCount.totalViews", 0] }, 0], // Handle null count
+      },
+    },
+  },
+  { $unset: "viewsCount" },
+];
