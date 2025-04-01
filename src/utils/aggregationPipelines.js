@@ -144,7 +144,12 @@ export const commentCountPipeline = [
       from: "comments",
       let: { recipeId: "$_id" },
       pipeline: [
-        { $match: { $expr: { $eq: ["$fromPost", "$$recipeId"] } } },
+        {
+          $match: {
+            $expr: { $eq: ["$fromPost", "$$recipeId"] },
+            $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+          },
+        },
         { $count: "totalComments" },
       ],
       as: "commentsCount",

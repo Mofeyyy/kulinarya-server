@@ -163,22 +163,22 @@ ReactionSchema.statics.getTopReactedPost = async function () {
     {
       $match: {
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
-        deletedAt: null // Ensures only active reactions are counted
-      }
+        deletedAt: null, // Ensures only active reactions are counted
+      },
     },
     {
       $group: {
         _id: "$fromPost",
-        totalReactions: { $sum: 1 }
-      }
+        totalReactions: { $sum: 1 },
+      },
     },
     {
       $lookup: {
         from: "recipes",
         localField: "_id",
         foreignField: "_id",
-        as: "recipe"
-      }
+        as: "recipe",
+      },
     },
     { $unwind: "$recipe" },
     {
@@ -186,8 +186,8 @@ ReactionSchema.statics.getTopReactedPost = async function () {
         from: "users",
         localField: "recipe.byUser",
         foreignField: "_id",
-        as: "user"
-      }
+        as: "user",
+      },
     },
     { $unwind: "$user" },
     {
@@ -196,10 +196,10 @@ ReactionSchema.statics.getTopReactedPost = async function () {
         let: { postId: "$_id" },
         pipeline: [
           { $match: { $expr: { $eq: ["$fromPost", "$$postId"] } } },
-          { $count: "totalComments" }
+          { $count: "totalComments" },
         ],
-        as: "comments"
-      }
+        as: "comments",
+      },
     },
     {
       $lookup: {
@@ -207,16 +207,20 @@ ReactionSchema.statics.getTopReactedPost = async function () {
         let: { postId: "$_id" },
         pipeline: [
           { $match: { $expr: { $eq: ["$fromPost", "$$postId"] } } },
-          { $count: "totalViews" }
+          { $count: "totalViews" },
         ],
-        as: "views"
-      }
+        as: "views",
+      },
     },
     {
       $addFields: {
-        totalComments: { $ifNull: [{ $arrayElemAt: ["$comments.totalComments", 0] }, 0] },
-        totalViews: { $ifNull: [{ $arrayElemAt: ["$views.totalViews", 0] }, 0] }
-      }
+        totalComments: {
+          $ifNull: [{ $arrayElemAt: ["$comments.totalComments", 0] }, 0],
+        },
+        totalViews: {
+          $ifNull: [{ $arrayElemAt: ["$views.totalViews", 0] }, 0],
+        },
+      },
     },
     {
       $project: {
@@ -227,18 +231,15 @@ ReactionSchema.statics.getTopReactedPost = async function () {
         totalComments: 1,
         totalViews: 1,
         "byUser.firstName": "$user.firstName",
-        "byUser.lastName": "$user.lastName"
-      }
+        "byUser.lastName": "$user.lastName",
+      },
     },
     { $sort: { totalReactions: -1 } },
-    { $limit: 10 }
+    { $limit: 10 },
   ]);
 
   return { topReactedPosts };
 };
-
-
-
 
 const Reaction = model("Reaction", ReactionSchema);
 export default Reaction;

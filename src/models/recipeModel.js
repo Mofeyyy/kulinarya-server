@@ -494,7 +494,11 @@ RecipeSchema.statics.getRecipeById = async function (req) {
         _id: new mongoose.Types.ObjectId(recipeId),
         "moderationInfo.status": "approved",
       },
-      [...commentPreviewPipeline, ...commentCountPipeline],
+      [
+        ...commentPreviewPipeline,
+        ...commentCountPipeline,
+        ...postViewCountPipeline,
+      ],
       [{ $limit: 1 }]
     ),
   ]).then((res) => res[0] || null);
