@@ -66,8 +66,8 @@ app.use((_, res) => res.status(404).json({ error: "Not Found" }));
 
 app.use(errorHandler); // Global Error Handler
 
-// setInterval(() => {
-//   console.log("Backend is running");
-// }, 30000);
+setInterval(() => {
+  console.log("Backend is running");
+}, 30000);
 
 export default app;
