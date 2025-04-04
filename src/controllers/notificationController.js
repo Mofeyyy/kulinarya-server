@@ -16,6 +16,19 @@ export const getUserNotifications = expressAsyncHandler(async (req, res) => {
   });
 });
 
+export const getUnreadNotificationsCount = expressAsyncHandler(
+  async (req, res) => {
+    const unreadCount = await Notification.getUnreadNotificationsCount(req);
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: "Unread Notification Count Fetched Successfully",
+      unreadCount,
+    });
+  }
+);
+
 export const readSpecificNotification = expressAsyncHandler(
   async (req, res) => {
     await Notification.readSpecificNotification(req);

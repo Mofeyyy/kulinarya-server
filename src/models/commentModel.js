@@ -14,6 +14,7 @@ import { validateObjectId } from "../utils/validators.js";
 // Imported Models
 import Recipe from "./recipeModel.js";
 import Notification from "./notificationModel.js";
+import { validate } from "uuid";
 
 // ---------------------------------------------------------------------------
 
@@ -51,9 +52,15 @@ CommentSchema.statics.addComment = async function (req) {
   const userInteractedFirstName = req.user.firstName;
 
   validateObjectId(recipeId, "Recipe");
+  validateObjectId(userInteractedId, "User");
 
   const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
+
+  const recipeOwnerId = recipe.byUser.toString();
+  const recipeTitle = recipe.title;
+
+  validateObjectId(recipeOwnerId, "User");
 
   const commentData = addCommentSchema.parse({
     fromPost: recipeId,
@@ -72,35 +79,25 @@ CommentSchema.statics.addComment = async function (req) {
     throw new CustomError("Failed to create comment", 500);
   }
 
-  let notification;
-  try {
-    console.log("Attempting to create notification...");
-    notification = await Notification.handleNotification({
-      byUser: {
-        userInteractedId,
-        userInteractedFirstName,
-      },
-      fromPost: {
-        recipeId,
-        recipeOwnerId: recipe.byUser.toString(),
-        recipeTitle: recipe.title,
-      },
-      type: "comment",
-    });
-    console.log("Notification created:", notification);
-  } catch (error) {
-    console.error("Error creating notification:", error);
-  }
+  const notification = await Notification.handleCommentNotification({
+    byUser: {
+      userInteractedId,
+      userInteractedFirstName,
+    },
+    fromPost: {
+      recipeId,
+      recipeOwnerId,
+      recipeTitle,
+    },
+  });
 
   return { comment, notification };
 };
-
 
 CommentSchema.statics.updateComment = async function (req) {
   const { commentId } = req.params;
   const newComment = req.body.content;
   const userInteractedId = req.user.userId;
-  const userInteractedFirstName = req.user.firstName;
 
   validateObjectId(commentId, "Comment");
 
@@ -122,7 +119,6 @@ CommentSchema.statics.updateComment = async function (req) {
     _id: commentId,
     deletedAt: { $in: [null, undefined] },
   }).select("byUser content");
-  const oldComment = existingComment?.content;
 
   if (!existingComment) throw new CustomError("Comment not found", 404);
 
@@ -132,21 +128,7 @@ CommentSchema.statics.updateComment = async function (req) {
   existingComment.content = newComment;
   const updatedComment = await existingComment.save();
 
-  const notification = await Notification.handleNotification({
-    byUser: {
-      userInteractedId,
-      userInteractedFirstName,
-    },
-    fromPost: {
-      recipeId,
-      recipeOwnerId: recipe.byUser.toString(),
-      recipeTitle: recipe.title,
-    },
-    type: "comment",
-    additionalData: { oldComment },
-  });
-
-  return { comment: updatedComment, notification };
+  return { comment: updatedComment };
 };
 
 CommentSchema.statics.softDeleteComment = async function (req) {
@@ -159,30 +141,23 @@ CommentSchema.statics.softDeleteComment = async function (req) {
   if (!comment) throw new CustomError("Comment not found", 404);
 
   const recipeId = comment.fromPost;
+  const commentOwnerId = comment.byUser.toString();
 
+  validateObjectId(commentOwnerId, "User");
   validateObjectId(recipeId, "Recipe");
 
   const recipe = await Recipe.findById(recipeId).select("byUser").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
   const recipeOwnerId = recipe.byUser.toString();
+  const recipeTitle = recipe.title;
 
-  if (comment.byUser.toString() !== userInteractedId)
+  validateObjectId(recipeOwnerId, "User");
+
+  if (commentOwnerId !== userInteractedId)
     throw new CustomError("Unauthorized", 401);
 
   comment.deletedAt = new Date();
   await comment.save();
-
-  await Notification.handleNotification({
-    byUser: {
-      userInteractedId,
-    },
-    fromPost: {
-      recipeId,
-      recipeOwnerId,
-    },
-    type: "comment",
-    isSoftDeleted: true,
-  });
 
   return;
 };

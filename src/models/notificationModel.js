@@ -5,14 +5,14 @@ import User from "../models/userModel.js";
 // Imported Utilities
 import CustomError from "../utils/customError.js";
 import { isUserOwnsTheRecipe } from "../utils/recipeUtils.js";
-import {
-  generateNotificationContent,
-  updateExistingNotification,
-} from "../utils/notificationUtils.js";
+import { checkSelfInteraction } from "../utils/notificationUtils.js";
 import { validateObjectId } from "../utils/validators.js";
 
 // Imported Validations
-import { createNotificationSchema } from "../validations/notificationValidation.js";
+import {
+  createNotificationSchema,
+  updateNotificationSchema,
+} from "../validations/notificationValidation.js";
 
 // ---------------------------------------------------------------------------
 
@@ -60,10 +60,11 @@ const NotificationSchema = new Schema(
   { timestamps: true }
 );
 
+// Static Methods
+// Cursor Based Pagination
 NotificationSchema.statics.getUserNotifications = async function (req) {
   const userId = req.user.userId;
   const { limit = 10, cursor } = req.query;
-  // cursor is the last createdAt timestamp of the last fetched notification
 
   validateObjectId(userId, "User");
 
@@ -74,21 +75,36 @@ NotificationSchema.statics.getUserNotifications = async function (req) {
 
   if (cursor) {
     filter.createdAt = { $lt: new Date(cursor) };
-  } // If cursor of last notification fetched timestamp is provided, filter notifications created before that timestamp
+  }
 
+  // Fetch paginated notifications
   const notifications = await this.find(filter)
-    .populate("byUser", "firstName lastName profilePictureUrl") // ✅ Include firstName and lastName
+    .populate("byUser", "firstName lastName profilePictureUrl")
     .sort({ createdAt: -1 })
     .limit(Number(limit))
     .lean();
 
-  // Set if there is still cursor to fetch more notifications
+  // Set new cursor for pagination
   const newCursor =
     notifications.length > 0
       ? notifications[notifications.length - 1].createdAt
       : null;
 
   return { notifications, cursor: newCursor };
+};
+
+NotificationSchema.statics.getUnreadNotificationsCount = async function (req) {
+  const userId = req.user.userId;
+
+  validateObjectId(userId, "User");
+
+  const count = await this.countDocuments({
+    forUser: userId,
+    isRead: false,
+    deletedAt: { $in: [null, undefined] },
+  });
+
+  return count;
 };
 
 NotificationSchema.statics.readSpecificNotification = async function (req) {
@@ -98,7 +114,9 @@ NotificationSchema.statics.readSpecificNotification = async function (req) {
 
   validateObjectId(notificationId, "Notification");
 
-  const notification = await this.findById(notificationId).select("isRead forUser");
+  const notification = await this.findById(notificationId).select(
+    "isRead forUser"
+  );
   if (!notification) throw new CustomError("Notification not found", 404);
 
   if (notification.forUser.toString() !== userId)
@@ -109,7 +127,6 @@ NotificationSchema.statics.readSpecificNotification = async function (req) {
 
   return;
 };
-
 
 NotificationSchema.statics.markAllAsRead = async function (req) {
   const userId = req.user.userId;
@@ -142,75 +159,18 @@ NotificationSchema.statics.softDeleteNotification = async function (req) {
   return;
 };
 
-// Centralized Notification Handler
-// TODO: Test this
-NotificationSchema.statics.handleNotification = async function ({
-  byUser,
-  fromPost,
-  type,
-  additionalData = {},
-  isSoftDeleted = false,
-}) {
-  const { recipeId, recipeOwnerId, recipeTitle } = fromPost;
-  const { userInteractedId, userInteractedFirstName } = byUser;
-
-  console.log("Handling notification for:", { recipeId, recipeOwnerId, userInteractedId, type });
-
-  // Prevent self-notifications
-  if (recipeOwnerId.toString() === userInteractedId.toString()) {
-    console.log("User interacted with their own post. No notification needed.");
-    return;
-  }
-
-  const existingNotification = await this.findOne({
-    forUser: recipeOwnerId,
-    byUser: userInteractedId,
-    fromPost: recipeId,
-    type,
-  });
-
-  const content = generateNotificationContent(type, {
-    userInteractedFirstName,
-    recipeTitle,
-    additionalData,
-  });
-
-  // If notification exists, update or soft delete it
-  if (existingNotification) {
-    console.log("Existing notification found. Updating...");
-    return await updateExistingNotification(existingNotification, {
-      content,
-      isSoftDeleted,
-    });
-  }
-
-  // No need to create notification if marked for soft deletion
-  if (isSoftDeleted) {
-    console.log("Notification marked for soft deletion. Skipping creation.");
-    return;
-  }
-
-  const notificationData = createNotificationSchema.parse({
-    forUser: recipeOwnerId,
-    byUser: userInteractedId,
-    fromPost: recipeId,
-    type,
-    content,
-  });
-
-  console.log("Creating new notification with data:", notificationData);
-  return await this.create(notificationData);
-};
-
-
+// For Creating Announcement Notification
 NotificationSchema.statics.createAnnouncementNotification = async function ({
   announcementId,
   createdBy,
 }) {
-  // Notify all users (excluding the creator)
-  const usersToNotify = await User.find({ _id: { $ne: createdBy } }).select(
-    "_id"
-  );
+  // Notify all users excluding the creator and deleted users
+  const usersToNotify = await User.find({
+    _id: { $ne: createdBy },
+    deletedAt: { $in: [null, undefined] },
+  })
+    .select("_id")
+    .lean();
 
   const notifications = usersToNotify.map((user) => ({
     forUser: user._id,
@@ -223,11 +183,168 @@ NotificationSchema.statics.createAnnouncementNotification = async function ({
   await this.insertMany(notifications);
 };
 
-// ? ----------------------------------------------------------------
-// NotificationSchema.statics.createNotification = async function (data) {
-//   const validatedData = notificationValidationSchema.parse(data); // ✅ Validate before creating
-//   return this.create(validatedData);
-// };
+// Reaction Notification Handler
+NotificationSchema.statics.handleReactionNotification = async function ({
+  byUser,
+  fromPost,
+  additionalData = {},
+}) {
+  // Extract Data
+  const { recipeId, recipeOwnerId, recipeTitle } = fromPost;
+  const { userInteractedId, userInteractedFirstName } = byUser;
+  const { newReaction } = additionalData;
 
+  console.log("Handling reaction notification for:", {
+    recipeId,
+    recipeOwnerId,
+    userInteractedId,
+  });
+
+  validateObjectId(recipeId, "Recipe");
+  validateObjectId(recipeOwnerId, "User");
+  validateObjectId(userInteractedId, "User");
+
+  // Prevent self-notifications
+  if (checkSelfInteraction(userInteractedId, recipeOwnerId)) return;
+
+  const existingNotification = await this.findOne({
+    forUser: recipeOwnerId,
+    byUser: userInteractedId,
+    fromPost: recipeId,
+    type: "reaction",
+  }).lean();
+
+  // If there is no existing notification, create a new one
+  if (!existingNotification) {
+    // Generate Content
+    const content = `${userInteractedFirstName} reacted (${newReaction}) on your recipe: ${recipeTitle}.`;
+
+    // Parse notification data
+    const notificationData = createNotificationSchema.parse({
+      forUser: recipeOwnerId,
+      byUser: userInteractedId,
+      fromPost: recipeId,
+      type: "reaction",
+      content,
+    });
+
+    console.log("Creating new reaction notification:", notificationData);
+    return await this.create(notificationData);
+  }
+};
+
+// Moderation Notification Handler
+NotificationSchema.statics.handleModerationNotification = async function ({
+  byUser,
+  fromPost,
+  additionalData = {},
+}) {
+  const { recipeId, recipeOwnerId, recipeTitle } = fromPost;
+  const { userInteractedId, userInteractedFirstName } = byUser;
+  const { moderationStatus, moderationNotes } = additionalData;
+
+  console.log("Handling moderation notification for:", {
+    recipeId,
+    recipeOwnerId,
+    userInteractedId,
+  });
+
+  validateObjectId(recipeId, "Recipe");
+  validateObjectId(recipeOwnerId, "User");
+  validateObjectId(userInteractedId, "User");
+
+  // Prevent self-notifications
+  if (checkSelfInteraction(userInteractedId, recipeOwnerId)) return;
+
+  const existingNotification = await this.findOne({
+    forUser: recipeOwnerId,
+    byUser: userInteractedId,
+    fromPost: recipeId,
+    type: "moderation",
+  });
+
+  // Generate content
+  const content =
+    moderationStatus === "approved"
+      ? `${userInteractedFirstName} approved your recipe: ${recipeTitle}.`
+      : `${userInteractedFirstName} rejected your recipe: ${recipeTitle}. ${
+          moderationNotes ? ` Reason: ${moderationNotes}` : ""
+        }`;
+
+  if (existingNotification) {
+    // If the notification already exists, update it
+
+    existingNotification.deletedAt = null;
+    existingNotification.content = content;
+    existingNotification.isRead = false;
+
+    updateNotificationSchema.parse({
+      deletedAt: existingNotification.deletedAt,
+      content: existingNotification.content,
+      isRead: existingNotification.isRead,
+    });
+
+    const updatedNotification = await existingNotification.save();
+
+    console.log(
+      "Updating existing moderation notification:",
+      updatedNotification
+    );
+
+    return updatedNotification;
+  } else {
+    // If there is no existing notification, create a new one
+
+    // Parse notification data
+    const notificationData = createNotificationSchema.parse({
+      forUser: recipeOwnerId,
+      byUser: userInteractedId,
+      fromPost: recipeId,
+      type: "moderation",
+      content,
+    });
+
+    console.log("Creating new moderation notification:", notificationData);
+    return await this.create(notificationData);
+  }
+};
+
+// Comment Notification Handler
+NotificationSchema.statics.handleCommentNotification = async function ({
+  byUser,
+  fromPost,
+}) {
+  const { recipeId, recipeOwnerId, recipeTitle } = fromPost;
+  const { userInteractedId, userInteractedFirstName } = byUser;
+
+  // For Debugging
+  console.log("Handling comment notification for:", {
+    recipeId,
+    recipeOwnerId,
+    userInteractedId,
+  });
+
+  validateObjectId(recipeId, "Recipe");
+  validateObjectId(recipeOwnerId, "User");
+  validateObjectId(userInteractedId, "User");
+
+  // Prevent self-notifications
+  if (checkSelfInteraction(userInteractedId, recipeOwnerId)) return;
+
+  // Generate content
+  const content = `${userInteractedFirstName} commented on your recipe: ${recipeTitle}.`;
+
+  // Parse notification data
+  const notificationData = createNotificationSchema.parse({
+    forUser: recipeOwnerId,
+    byUser: userInteractedId,
+    fromPost: recipeId,
+    type: "comment",
+    content,
+  });
+
+  console.log("Creating new comment notification:", notificationData);
+  return await this.create(notificationData);
+};
 const Notification = model("Notification", NotificationSchema);
 export default Notification;
