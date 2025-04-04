@@ -132,6 +132,36 @@ ModerationSchema.statics = {
     // If no changes, return the existing moderation without updates
     return { moderation: existingModeration };
   },
+
+  async fetchSpecificModeration(req) {
+    const { recipeId } = req.params;
+
+    validateObjectId(recipeId, "Recipe");
+
+    // Find the moderation for the given recipeId
+    const existingModeration = await this.findOne({
+      forPost: recipeId,
+    })
+      .populate("forPost", "_id title byUser")
+      .populate("moderatedBy", "_id firstName lastName");
+
+    if (!existingModeration) throw new CustomError("Moderation not found", 404);
+
+    return existingModeration;
+  },
+
+  async fetchPendingModerationCount(req) {
+    const userInteractedRole = req.user?.role;
+
+    if (userInteractedRole !== "admin" && userInteractedRole !== "creator")
+      throw new CustomError("Unauthorized Access", 403);
+
+    const pendingModerationCount = await this.countDocuments({
+      status: "pending",
+    });
+
+    return pendingModerationCount;
+  },
 };
 
 const Moderation = model("Moderation", ModerationSchema);

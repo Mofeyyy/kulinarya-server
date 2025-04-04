@@ -1,7 +1,11 @@
 import express from "express";
 
 // Imported Controllers
-import { moderatePost } from "../controllers/moderationController.js";
+import {
+  moderatePost,
+  fetchSpecificModeration,
+  fetchPendingModerationCount,
+} from "../controllers/moderationController.js";
 
 // Imported Middlewares
 import { authenticateUser } from "../middleware/authenticateUser.js";
@@ -17,5 +21,9 @@ router.patch(
   checkRole(["admin", "creator"]),
   moderatePost
 );
+
+router.get(/pending-count/, authenticateUser, fetchPendingModerationCount);
+
+router.get("/:recipeId", authenticateUser, fetchSpecificModeration);
 
 export default router;
