@@ -217,5 +217,14 @@ CommentSchema.statics.fetchAllPostComments = async function (req) {
   return { comments, cursor: newCursor };
 };
 
+CommentSchema.statics.fetchOverallComments = async function () {
+  const totalComments = await this.countDocuments({
+    $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+  });
+
+  return { totalComments };
+};
+
+
 const Comment = model("Comment", CommentSchema);
 export default Comment;

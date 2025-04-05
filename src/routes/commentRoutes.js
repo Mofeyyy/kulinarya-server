@@ -6,6 +6,7 @@ import {
   updateRecipeComment,
   softDeleteRecipeComment,
   fetchAllPostComments,
+  getOverallComments
 } from "../controllers/commentController.js";
 
 // Imported Middlewares
@@ -14,7 +15,7 @@ import { authenticateUser } from "../middleware/authenticateUser.js";
 // ---------------------------------------------------------------------------
 
 const router = express.Router();
-
+router.get("/overall-comments", getOverallComments);
 router.get("/:recipeId", fetchAllPostComments);
 router.post("/:recipeId", authenticateUser, addRecipeComment);
 router.patch("/:commentId", authenticateUser, updateRecipeComment);

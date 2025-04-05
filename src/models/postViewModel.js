@@ -98,6 +98,24 @@ PostViewSchema.statics.getTopPostViews = async function () {
   const startOfMonth = new Date(new Date().setDate(1)); // First day of the current month
   const endOfMonth = new Date(); // Today's date
 
+  // Step 1: Get total post views overall
+  const totalPostViewsResult = await this.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+      }
+    },
+    {
+      $group: {
+        _id: null, // Group all views together
+        totalPostViews: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const totalPostViews = totalPostViewsResult.length > 0 ? totalPostViewsResult[0].totalPostViews : 0;
+
+  // Step 2: Get the top viewed posts
   const topViewedPosts = await this.aggregate([
     {
       $match: {
@@ -148,7 +166,7 @@ PostViewSchema.statics.getTopPostViews = async function () {
       $project: {
         _id: "$recipe._id",
         title: "$recipe.title",
-        mainPictureUrl: "$recipe.mainPictureUrl", // Added mainPictureUrl
+        mainPictureUrl: "$recipe.mainPictureUrl", // ✅ Ensure this is included
         totalViews: 1,
         totalComments: { $size: "$comments" },
         totalReactions: { $size: "$reactions" },
@@ -160,8 +178,9 @@ PostViewSchema.statics.getTopPostViews = async function () {
     { $limit: 10 }
   ]);
 
-  return { topViewedPosts };
+  return { totalPostViews, topViewedPosts };
 };
+
 
 
 

@@ -34,7 +34,7 @@ export const getTopRecipePostViews = expressAsyncHandler(async (req, res) => {
   const reorderedData = result.topViewedPosts.map(({ 
     _id, 
     title, 
-    mainPictureUrl, // ✅ Include this
+    mainPictureUrl, 
     totalViews, 
     totalComments, 
     totalReactions, 
@@ -42,7 +42,7 @@ export const getTopRecipePostViews = expressAsyncHandler(async (req, res) => {
   }) => ({
     _id,
     title,
-    mainPictureUrl, // ✅ Ensure it's in the response
+    mainPictureUrl, 
     totalViews,
     totalComments,
     totalReactions,
@@ -58,9 +58,11 @@ export const getTopRecipePostViews = expressAsyncHandler(async (req, res) => {
     success: true,
     statusCode: 200,
     message: "Top Viewed Posts Fetched Successfully",
+    totalPostViews: result.totalPostViews, 
     topViewedPosts: reorderedData
   });
 });
+
 
 
 
