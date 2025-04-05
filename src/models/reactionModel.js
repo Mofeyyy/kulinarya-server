@@ -85,12 +85,15 @@ ReactionSchema.statics.toggleReaction = async function (req) {
   const userInteractedFirstName = req.user.firstName;
 
   validateObjectId(recipeId, "Recipe");
+  validateObjectId(userInteractedId, "User");
 
   const recipe = await Recipe.findById(recipeId).select("byUser title").lean();
   if (!recipe) throw new CustomError("Recipe not found", 404);
 
   const recipeOwnerId = recipe.byUser.toString();
   const recipeTitle = recipe.title;
+
+  validateObjectId(recipeOwnerId, "User");
 
   const existingReaction = await this.findOne({
     fromPost: recipeId,
@@ -116,7 +119,6 @@ ReactionSchema.statics.toggleReaction = async function (req) {
       // Soft Delete the reaction if the user reacted the same existing reaction
       existingReaction.reaction = null;
       existingReaction.deletedAt = new Date();
-      isSoftDeleted = true;
     } else {
       // Update the reaction if the user reacted a different reaction
       updateReactionSchema.parse({ reaction: newReaction });
@@ -136,7 +138,7 @@ ReactionSchema.statics.toggleReaction = async function (req) {
     reactionData = await this.create(newReactionData);
   }
 
-  const notificationData = await Notification.handleNotification({
+  const notificationData = await Notification.handleReactionNotification({
     byUser: {
       userInteractedId,
       userInteractedFirstName,
@@ -146,9 +148,7 @@ ReactionSchema.statics.toggleReaction = async function (req) {
       recipeOwnerId,
       recipeTitle,
     },
-    type: "reaction",
-    additionalData: { newReaction, oldReaction },
-    isSoftDeleted,
+    additionalData: { newReaction },
   });
 
   return { reactionData, notificationData, isNewReaction, isSoftDeleted };

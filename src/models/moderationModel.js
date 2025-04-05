@@ -67,78 +67,101 @@ ModerationSchema.statics = {
   },
 
   // Handle Post Moderation
-async moderatePost(req) {
-  const { moderationId } = req.params;
-  const { status, notes } = req.body;
-  const moderatorId = req.user.userId;
-  const moderatorFirstName = req.user.firstName;
+  async moderatePost(req) {
+    const { moderationId } = req.params;
+    const { status, notes } = req.body;
+    const moderatorId = req.user.userId;
+    const moderatorFirstName = req.user.firstName;
 
-  validateObjectId(moderationId, "moderation");
+    validateObjectId(moderationId, "moderation");
 
-  const existingModeration = await this.findById(moderationId).populate(
-    "forPost",
-    "_id title byUser"
-  );
-  if (!existingModeration) throw new CustomError("Moderation not found", 404);
+    const existingModeration = await this.findById(moderationId).populate(
+      "forPost",
+      "_id title byUser"
+    );
+    if (!existingModeration) throw new CustomError("Moderation not found", 404);
 
-  const recipeModeratedId = existingModeration.forPost._id.toString();
-  const recipeModeratedTitle = existingModeration.forPost.title;
-  const recipeModeratedOwnerId = existingModeration.forPost.byUser.toString();
+    const recipeModeratedId = existingModeration.forPost._id.toString();
+    const recipeModeratedTitle = existingModeration.forPost.title;
+    const recipeModeratedOwnerId = existingModeration.forPost.byUser.toString();
 
-  // Prevent moderators from moderating their own recipes
-  if (recipeModeratedOwnerId === moderatorId) {
-    throw new CustomError("You cannot moderate your own recipe.", 403);
-  }
+    validateObjectId(recipeModeratedId, "Recipe");
+    validateObjectId(recipeModeratedOwnerId, "User");
 
-  const moderationData = updateModerationSchema.parse({
-    status,
-    notes,
-  });
-
-  if (existingModeration.status !== moderationData.status || existingModeration.notes !== moderationData.notes) {
-    existingModeration.set({
-      status: moderationData.status,
-      notes: moderationData.notes,
-      moderatedBy: moderatorId,
-    });
-
-    const updatedModeration = await existingModeration.save();
-
-    // ✅ Update the recipe's status in the database when approved
-    if (moderationData.status === "approved") {
-      await Recipe.findByIdAndUpdate(recipeModeratedId, {
-        status: "approved",
-      });
-    } else if (moderationData.status === "rejected") {
-      await Recipe.findByIdAndUpdate(recipeModeratedId, {
-        status: "rejected",  // Recipe status set to rejected
-      });
+    // Prevent moderators from moderating their own recipes
+    if (recipeModeratedOwnerId === moderatorId) {
+      throw new CustomError("You cannot moderate your own recipe.", 403);
     }
 
-    await Notification.handleNotification({
-      byUser: {
-        userInteractedId: moderatorId,
-        userInteractedFirstName: moderatorFirstName,
-      },
-      fromPost: {
-        recipeId: recipeModeratedId,
-        recipeTitle: recipeModeratedTitle,
-        recipeOwnerId: recipeModeratedOwnerId,
-      },
-      type: "moderation",
-      additionalData: {
-        moderationStatus: moderationData.status,
-        moderationNotes: moderationData.notes,
-      },
+    const moderationData = updateModerationSchema.parse({
+      status,
+      notes,
     });
 
-    return { moderation: updatedModeration };
-  }
+    if (
+      existingModeration.status !== moderationData.status ||
+      existingModeration.notes !== moderationData.notes
+    ) {
+      existingModeration.set({
+        status: moderationData.status,
+        notes: moderationData.notes,
+        moderatedBy: moderatorId,
+      });
 
-  // If no changes, return the existing moderation without updates
-  return { moderation: existingModeration };
-},
+      const updatedModeration = await existingModeration.save();
 
+      const notification = await Notification.handleModerationNotification({
+        byUser: {
+          userInteractedId: moderatorId,
+          userInteractedFirstName: moderatorFirstName,
+        },
+        fromPost: {
+          recipeId: recipeModeratedId,
+          recipeTitle: recipeModeratedTitle,
+          recipeOwnerId: recipeModeratedOwnerId,
+        },
+        additionalData: {
+          moderationStatus: moderationData.status,
+          moderationNotes: moderationData.notes,
+        },
+      });
+
+      return { moderation: updatedModeration, notification };
+    }
+
+    // If no changes, return the existing moderation without updates
+    return { moderation: existingModeration };
+  },
+
+  async fetchSpecificModeration(req) {
+    const { recipeId } = req.params;
+
+    validateObjectId(recipeId, "Recipe");
+
+    // Find the moderation for the given recipeId
+    const existingModeration = await this.findOne({
+      forPost: recipeId,
+    })
+      .populate("forPost", "_id title byUser")
+      .populate("moderatedBy", "_id firstName lastName");
+
+    if (!existingModeration) throw new CustomError("Moderation not found", 404);
+
+    return existingModeration;
+  },
+
+  async fetchPendingModerationCount(req) {
+    const userInteractedRole = req.user?.role;
+
+    if (userInteractedRole !== "admin" && userInteractedRole !== "creator")
+      throw new CustomError("Unauthorized Access", 403);
+
+    const pendingModerationCount = await this.countDocuments({
+      status: "pending",
+    });
+
+    return pendingModerationCount;
+  },
 };
 
 const Moderation = model("Moderation", ModerationSchema);

@@ -16,3 +16,29 @@ export const moderatePost = expressAsyncHandler(async (req, res) => {
     ...result,
   });
 });
+
+export const fetchSpecificModeration = expressAsyncHandler(async (req, res) => {
+  const moderation = await Moderation.fetchSpecificModeration(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe Moderation Fetched Successfully",
+    moderation,
+  });
+});
+
+export const fetchPendingModerationCount = expressAsyncHandler(
+  async (req, res) => {
+    const pendingModerationCount = await Moderation.fetchPendingModerationCount(
+      req
+    );
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: "Pending Moderation Count Fetched Successfully",
+      pendingModerationCount,
+    });
+  }
+);
