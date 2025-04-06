@@ -5,12 +5,13 @@ import {
   postNewRecipe,
   updateRecipe,
   getAllApprovedRecipes,
-  getRecipeById,
+  getApprovedRecipeById,
   getFeaturedRecipes,
   getPendingRecipes,
   toggleFeatureRecipe,
   softDeleteRecipe,
   getTopEngagedRecipes,
+  getRecipeById,
 } from "../controllers/recipeController.js";
 
 // Imported Middlewares
@@ -63,6 +64,11 @@ router.get(
 router.get("/approved", getAllApprovedRecipes);
 router.get("/featured", getFeaturedRecipes);
 router.get("/top-engaged", getTopEngagedRecipes);
-router.get("/:recipeId", authenticateUser.optional, getRecipeById);
+router.get(
+  "/approved/:recipeId",
+  authenticateUser.optional,
+  getApprovedRecipeById
+);
+router.get("/edit/:recipeId", authenticateUser, getRecipeById);
 
 export default router;

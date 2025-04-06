@@ -359,6 +359,15 @@ RecipeSchema.statics.updateRecipe = async function (req) {
     { new: true, runValidators: true }
   );
 
+  // Turn moderation status to pending if the update is success
+  if (updatedRecipe) {
+    await Moderation.moderatePost({
+      forPost: recipeId,
+      status: "pending",
+      userId: userId,
+    });
+  }
+
   if (!updatedRecipe) {
     const existingRecipe = await this.findOne({ _id: recipeId })
       .select("deletedAt")
@@ -397,7 +406,7 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
-  // For Custom Sorting - Feature Admin Page
+  // For Custom Sorting -> Feature Admin Page
   const customSort = query.forFeaturedRecipes
     ? { isFeatured: -1, ...sortOrder }
     : { ...sortOrder };
@@ -501,14 +510,12 @@ RecipeSchema.statics.getPendingRecipes = async function (query) {
   };
 };
 
-// Get Recipe by ID - For Viewing in Recipe Viewing Page
-RecipeSchema.statics.getRecipeById = async function (req) {
+// Get Approved Recipe by ID - For Viewing in Recipe Viewing Page
+RecipeSchema.statics.getApprovedRecipeById = async function (req) {
   const { recipeId } = req.params;
   const userInteractedId = req.user?.userId;
 
   validateObjectId(recipeId, "Recipe");
-
-  console.log("RecipeId:", recipeId);
 
   const recipe = await this.aggregate([
     ...recipeAggregationPipeline(
@@ -525,6 +532,8 @@ RecipeSchema.statics.getRecipeById = async function (req) {
       [{ $limit: 1 }]
     ),
   ]).then((res) => res[0] || null);
+
+  console.log("Recipe:", recipe);
 
   if (!recipe) throw new CustomError("Recipe not found", 404);
 
@@ -676,6 +685,27 @@ RecipeSchema.statics.getTopEngagedRecipes = async function () {
   ]);
 
   return topEngagedRecipes;
+};
+
+// Get Recipe Without Moderation Constraints -> For Edit Recipe
+RecipeSchema.statics.getRecipeById = async function (req) {
+  const { recipeId } = req.params;
+  const { userId } = req.user;
+  const userInteractedId = userId;
+
+  validateObjectId(recipeId, "Recipe");
+
+  const recipe = await this.findById(recipeId).populate("byUser").lean();
+
+  if (!recipe) throw new CustomError("Recipe not found", 404);
+  if (recipe.deletedAt) throw new CustomError("Recipe deleted", 400);
+
+  const isAuthorizedUser =
+    recipe.byUser.toString() === userInteractedId.toString();
+
+  if (isAuthorizedUser) throw new CustomError("Unauthorized Access", 401);
+
+  return recipe;
 };
 
 const Recipe = model("Recipe", RecipeSchema);

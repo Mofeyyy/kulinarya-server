@@ -15,6 +15,7 @@ export const postNewRecipe = expressAsyncHandler(async (req, res) => {
 });
 
 export const updateRecipe = expressAsyncHandler(async (req, res) => {
+  console.log("HOOOOYYY!");
   const result = await Recipe.updateRecipe(req);
 
   res.status(200).json({
@@ -61,8 +62,8 @@ export const getPendingRecipes = expressAsyncHandler(async (req, res) => {
   });
 });
 
-export const getRecipeById = expressAsyncHandler(async (req, res) => {
-  const recipe = await Recipe.getRecipeById(req);
+export const getApprovedRecipeById = expressAsyncHandler(async (req, res) => {
+  const recipe = await Recipe.getApprovedRecipeById(req);
 
   res.status(200).json({
     success: true,
@@ -102,5 +103,16 @@ export const getTopEngagedRecipes = expressAsyncHandler(async (_, res) => {
     statusCode: 200,
     message: "Top Engaged Recipes Fetched Successfully",
     topEngagedRecipes,
+  });
+});
+
+export const getRecipeById = expressAsyncHandler(async (req, res) => {
+  const recipe = await Recipe.getRecipeById(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Recipe Fetched Successfully",
+    recipe,
   });
 });
