@@ -397,6 +397,11 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
+  // For Custom Sorting - Feature Admin Page
+  const customSort = query.forFeaturedRecipes
+    ? { isFeatured: -1, ...sortOrder }
+    : { ...sortOrder };
+
   console.log(`Page: ${page}, Limit: ${limit}`); // Debugging log
 
   //Count Approved Recipes
@@ -408,6 +413,8 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
   ]);
 
   const totalApprovedRecipes = approvedRecipeCount[0]?.total || 0;
+  const totalPages = Math.ceil(totalApprovedRecipes / limit);
+  const hasNextPage = page < totalPages;
 
   // Fetch with pagination
   const approvedRecipesData = await this.aggregate([
@@ -426,14 +433,20 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
         "byUser._id": 1,
         "byUser.firstName": 1,
         "byUser.lastName": 1,
+        "byUser.profilePictureUrl": 1,
         mainPictureUrl: 1,
+        isFeatured: 1,
+        createdAt: 1,
         totalComments: 1,
         totalReactions: 1,
         totalViews: 1,
+        totalEngagement: {
+          $add: ["$totalComments", "$totalReactions", "$totalViews"],
+        },
       },
     },
 
-    { $sort: { ...sortOrder } },
+    { $sort: customSort },
     { $skip: (page - 1) * limit },
     { $limit: limit },
   ]);
@@ -444,7 +457,8 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(totalApprovedRecipes / limit),
+      totalPages,
+      hasNextPage,
     },
   };
 };
@@ -458,24 +472,33 @@ RecipeSchema.statics.getPendingRecipes = async function (query) {
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "pending",
     }),
-
     { $count: "total" },
   ]);
 
   const totalPendingRecipes = pendingRecipeCount[0]?.total || 0;
+  const totalPages = Math.ceil(totalPendingRecipes / limit);
+  const hasNextPage = page < totalPages;
 
   // Fetch recipes data
   const pendingRecipesData = await this.aggregate([
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "pending",
     }),
-
     { $sort: { ...sortOrder } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
   ]);
 
-  return { pendingRecipesData, totalPendingRecipes, page, limit };
+  return {
+    pendingRecipesData,
+    totalPendingRecipes,
+    pagination: {
+      page,
+      limit,
+      totalPages,
+      hasNextPage,
+    },
+  };
 };
 
 // Get Recipe by ID - For Viewing in Recipe Viewing Page
@@ -531,9 +554,14 @@ RecipeSchema.statics.getRecipeById = async function (req) {
 };
 
 // Feature Recipe
-// ? How about unfeaturing a recipe, address this soon when implemented on front end
-// ? Can I do this as a toggle instead soon
-RecipeSchema.statics.toggleFeatureRecipe = async function (recipeId) {
+RecipeSchema.statics.toggleFeatureRecipe = async function (req) {
+  const recipeId = req.params.recipeId;
+
+  console.log("IIIITTOOOOO RecipeId:", recipeId);
+  console.log(
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  );
+
   validateObjectId(recipeId, "Recipe");
 
   const recipe = await this.findOne({ _id: recipeId }).populate(

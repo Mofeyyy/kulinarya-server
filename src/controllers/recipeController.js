@@ -73,9 +73,7 @@ export const getRecipeById = expressAsyncHandler(async (req, res) => {
 });
 
 export const toggleFeatureRecipe = expressAsyncHandler(async (req, res) => {
-  const { recipeId } = req.params;
-
-  const updatedRecipe = await Recipe.toggleFeatureRecipe(recipeId);
+  const updatedRecipe = await Recipe.toggleFeatureRecipe(req);
 
   res.status(200).json({
     message: updatedRecipe.isFeatured
