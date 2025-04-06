@@ -6,7 +6,7 @@ import { z } from "zod";
 export const notificationBaseSchema = z.object({
   forUser: z.string().min(1, "forUser is required"),
 
-  byUser: z.string().min(1, "byUser is required"),
+  byUser: z.string().min(1, "byUser is required").optional(),
 
   fromPost: z.string().min(1, "fromPost is required"),
 

@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 // Imported Models
 import Moderation from "./moderationModel.js";
 import Reaction from "./reactionModel.js";
+import Notification from "./notificationModel.js";
 
 // Imported Validations
 import {
@@ -172,6 +173,7 @@ RecipeSchema.statics.extractQueryParams = function (query) {
 
 // Create Recipe
 RecipeSchema.statics.createRecipe = async function (req) {
+  const { userId } = req.user;
   // Parse ingredients and procedures if they are strings
   req.body.ingredients = req.body.ingredients
     ? JSON.parse(req.body.ingredients)
@@ -240,7 +242,18 @@ RecipeSchema.statics.createRecipe = async function (req) {
 
   newRecipe.moderationInfo = newModeration._id;
 
-  return await newRecipe.save();
+  const recipe = await newRecipe.save();
+
+  console.log("New Recipe:", recipe);
+
+  await Notification.create({
+    forUser: userId,
+    fromPost: recipe._id,
+    type: "moderation",
+    content: `Your recipe "${recipe.title}" has been submitted for moderation. Please wait for the moderator's review. Click here to track status.`,
+  });
+
+  return recipe;
 };
 
 //  Find and update Recipe
@@ -359,13 +372,33 @@ RecipeSchema.statics.updateRecipe = async function (req) {
     { new: true, runValidators: true }
   );
 
-  // Turn moderation status to pending if the update is success
+  // Set to pending
   if (updatedRecipe) {
-    await Moderation.moderatePost({
-      forPost: recipeId,
-      status: "pending",
-      userId: userId,
-    });
+    await Moderation.findOneAndUpdate(
+      {
+        forPost: recipeId,
+      },
+      {
+        moderatedBy: null,
+        status: "pending",
+        notes: "",
+      }
+    );
+
+    await Notification.findOneAndUpdate(
+      {
+        fromPost: recipeId,
+        forUser: userId,
+        type: "moderation",
+      },
+      {
+        byUser: null,
+        content: `Your recipe "${updatedRecipe.title}" has been updated. Click here to track status.`,
+        deletedAt: null,
+        isRead: false,
+      },
+      { new: true }
+    );
   }
 
   if (!updatedRecipe) {
