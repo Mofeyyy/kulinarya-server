@@ -14,6 +14,7 @@ import {
   getAuthUserDetails,
   forgotPassword,
   resetPassword,
+  verifyResetToken
 } from "../controllers/authController.js";
 
 const router = express.Router();
@@ -31,5 +32,6 @@ router.get("/user-details", authenticateUser, getAuthUserDetails);
 // Password Recovery
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post('/verify-reset-token', verifyResetToken);
 
 export default router;

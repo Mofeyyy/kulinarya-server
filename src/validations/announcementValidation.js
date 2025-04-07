@@ -6,6 +6,6 @@ export const createAnnouncementSchema = z.object({
     .string()
     .min(2, "Content must be at least 2 characters")
     .trim(),
-
-  createdBy: z.string().min(1, "Created by is required"),
+  createdBy: z.string().min(1, "Created by is required").optional(), // Mark as optional
 });
+

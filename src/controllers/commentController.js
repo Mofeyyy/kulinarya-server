@@ -47,3 +47,8 @@ export const fetchAllPostComments = expressAsyncHandler(async (req, res) => {
     ...result,
   });
 });
+
+export const getOverallComments = expressAsyncHandler(async (req, res) => {
+  const { totalComments } = await Comment.fetchOverallComments();
+  res.status(200).json({ totalComments });
+});

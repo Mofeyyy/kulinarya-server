@@ -241,5 +241,42 @@ ReactionSchema.statics.getTopReactedPost = async function () {
   return { topReactedPosts };
 };
 
+ReactionSchema.statics.getOverallReactions = async function () {
+  const overallReactions = await this.aggregate([
+    {
+      $match: {
+        deletedAt: null, // Excludes soft-deleted reactions
+      },
+    },
+    {
+      $group: {
+        _id: "$reaction",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        reaction: "$_id",
+        count: 1,
+      },
+    },
+  ]);
+
+  // Convert array to an object format for easier frontend handling
+  const reactionStats = {
+    heart: 0,
+    drool: 0,
+    neutral: 0,
+  };
+
+  overallReactions.forEach(({ reaction, count }) => {
+    if (reaction) reactionStats[reaction] = count;
+  });
+
+  return reactionStats;
+};
+
+
 const Reaction = model("Reaction", ReactionSchema);
 export default Reaction;

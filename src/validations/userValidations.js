@@ -44,7 +44,7 @@ export const loginUserSchema = userBaseSchema
     password: z.string().min(2, "Password is Required"),
   });
 
-// TODO: Use this when implementing edit profile
+  // TODO: Use this when implementing edit profile
 // Edit or Update User Profile
 export const updateUserSchema = userBaseSchema
   .pick({
@@ -74,8 +74,21 @@ export const updateUserSchema = userBaseSchema
     deletedAt: z.date().nullable().optional(),
   });
 
-// TODO: Use this when implementing change email
+  // TODO: Use this when implementing change email
 // Change Email
 export const changeEmailSchema = userBaseSchema.pick({
   email: true,
 });
+
+// Forgot Password Schema (email only)
+export const forgotPasswordSchema = z.object({
+  email: userBaseSchema.shape.email,
+});
+
+// Reset Password Schema
+export const resetPasswordSchema = z
+  .object({
+    newPassword: userBaseSchema.shape.password,
+
+  })
+  

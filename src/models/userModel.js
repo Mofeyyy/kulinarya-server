@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 
+
 // Imported Utility Functions
 import { verifyToken } from "../utils/tokenUtils.js";
 import CustomError from "../utils/customError.js";
@@ -20,6 +21,7 @@ import {
 import ResendAttempt from "./resendAttemptModel.js";
 import Recipe from "./recipeModel.js";
 import Moderation from "./moderationModel.js";
+import ResetToken from "./resetTokenModel.js";
 
 // TODO: Add Object Id Validations
 
@@ -237,36 +239,62 @@ userSchema.statics.getAuthUserDetails = async function (req) {
 // Static method for sending a password reset email
 userSchema.statics.sendPasswordResetEmail = async function (email) {
   const user = await this.findOne({ email });
-
   if (!user) throw new CustomError("User not found", 404);
 
-  // Check if resend is allowed
-  const { allowed, attempts, message } =
-    await ResendAttempt.handleResendAttempt(user.email, "passwordReset");
-
+  const { allowed, attempts, message } = await ResendAttempt.handleResendAttempt(user.email, "passwordReset");
   if (!allowed) throw new CustomError(message, 400);
 
-  return { user, sendAttempts: attempts };
+  // Generate new token
+  const token = jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" }
+  );
+
+  // Save to DB
+  await ResetToken.create({
+    userId: user._id,
+    token,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 mins
+  });
+
+  return { user, sendAttempts: attempts, token }; // optionally return token for testing
 };
 
 // Static method for password reset
+userSchema.statics.verifyResetToken = async function (token) {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const resetEntry = await ResetToken.findOne({ token });
+    if (!resetEntry || resetEntry.used || resetEntry.expiresAt < new Date()) {
+      throw new CustomError("Invalid, expired, or already used token", 400);
+    }
+
+    return decoded;
+  } catch (err) {
+    throw new CustomError("Invalid or expired token", 400);
+  }
+};
+
+
+
 userSchema.statics.passwordReset = async function (token, newPassword) {
-  // Validate user data
-  updateUserSchema.parse({
-    password: newPassword,
-  });
+  const decoded = await this.verifyResetToken(token);
 
-  const decodedToken = verifyToken(token);
-
-  validateObjectId(decodedToken.userId, "User ID");
-
-  const user = await this.findById(decodedToken.userId);
-
+  const user = await this.findById(decoded.userId);
   if (!user) throw new CustomError("User not found", 404);
 
-  user.password = newPassword;
+  // Update password
+  user.password = newPassword; // plain text
   await user.save();
+
+  // Mark token as used
+  await ResetToken.findOneAndUpdate({ token }, { used: true });
+
+  return user;
 };
+
 
 // Static method for fetching specific user data
 userSchema.statics.getSpecificUserData = async function (req) {

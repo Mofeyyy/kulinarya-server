@@ -44,3 +44,8 @@ export const getTopReactedPost = expressAsyncHandler(async (req, res) => {
     throw new CustomError(error.message, error.statusCode || 500);
   }
 });
+
+export const getOverallReactions = expressAsyncHandler(async (req, res) => {
+  const reactionStats = await Reaction.getOverallReactions();
+  res.status(200).json(reactionStats);
+});
