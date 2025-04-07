@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 // Imported Models
 import Moderation from "./moderationModel.js";
 import Reaction from "./reactionModel.js";
+import Notification from "./notificationModel.js";
 
 // Imported Validations
 import {
@@ -129,7 +130,7 @@ RecipeSchema.statics.extractQueryParams = function (query) {
     ? 10
     : Math.min(Math.max(1, Number(query.limit)), 100);
   const sortOrder =
-    query.sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
+    query.sortOrder === "newest" ? { updatedAt: -1 } : { updatedAt: 1 };
 
   const filter = {};
   const searchConditions = [];
@@ -172,6 +173,7 @@ RecipeSchema.statics.extractQueryParams = function (query) {
 
 // Create Recipe
 RecipeSchema.statics.createRecipe = async function (req) {
+  const { userId } = req.user;
   // Parse ingredients and procedures if they are strings
   req.body.ingredients = req.body.ingredients
     ? JSON.parse(req.body.ingredients)
@@ -240,7 +242,18 @@ RecipeSchema.statics.createRecipe = async function (req) {
 
   newRecipe.moderationInfo = newModeration._id;
 
-  return await newRecipe.save();
+  const recipe = await newRecipe.save();
+
+  console.log("New Recipe:", recipe);
+
+  await Notification.create({
+    forUser: userId,
+    fromPost: recipe._id,
+    type: "moderation",
+    content: `Your recipe "${recipe.title}" has been submitted for moderation. Please wait for the moderator's review. Click here to track status.`,
+  });
+
+  return recipe;
 };
 
 //  Find and update Recipe
@@ -359,6 +372,35 @@ RecipeSchema.statics.updateRecipe = async function (req) {
     { new: true, runValidators: true }
   );
 
+  // Set to pending
+  if (updatedRecipe) {
+    await Moderation.findOneAndUpdate(
+      {
+        forPost: recipeId,
+      },
+      {
+        moderatedBy: null,
+        status: "pending",
+        notes: "",
+      }
+    );
+
+    await Notification.findOneAndUpdate(
+      {
+        fromPost: recipeId,
+        forUser: userId,
+        type: "moderation",
+      },
+      {
+        byUser: null,
+        content: `Your recipe "${updatedRecipe.title}" has been updated. Click here to track status.`,
+        deletedAt: null,
+        isRead: false,
+      },
+      { new: true }
+    );
+  }
+
   if (!updatedRecipe) {
     const existingRecipe = await this.findOne({ _id: recipeId })
       .select("deletedAt")
@@ -397,6 +439,11 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
+  // For Custom Sorting -> Feature Admin Page
+  const customSort = query.forFeaturedRecipes
+    ? { isFeatured: -1, ...sortOrder }
+    : { ...sortOrder };
+
   console.log(`Page: ${page}, Limit: ${limit}`); // Debugging log
 
   //Count Approved Recipes
@@ -408,6 +455,8 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
   ]);
 
   const totalApprovedRecipes = approvedRecipeCount[0]?.total || 0;
+  const totalPages = Math.ceil(totalApprovedRecipes / limit);
+  const hasNextPage = page < totalPages;
 
   // Fetch with pagination
   const approvedRecipesData = await this.aggregate([
@@ -426,14 +475,21 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
         "byUser._id": 1,
         "byUser.firstName": 1,
         "byUser.lastName": 1,
+        "byUser.profilePictureUrl": 1,
         mainPictureUrl: 1,
+        isFeatured: 1,
+        createdAt: 1,
+        updatedAt: 1,
         totalComments: 1,
         totalReactions: 1,
         totalViews: 1,
+        totalEngagement: {
+          $add: ["$totalComments", "$totalReactions", "$totalViews"],
+        },
       },
     },
 
-    { $sort: { ...sortOrder } },
+    { $sort: customSort },
     { $skip: (page - 1) * limit },
     { $limit: limit },
   ]);
@@ -444,7 +500,8 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(totalApprovedRecipes / limit),
+      totalPages,
+      hasNextPage,
     },
   };
 };
@@ -458,34 +515,41 @@ RecipeSchema.statics.getPendingRecipes = async function (query) {
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "pending",
     }),
-
     { $count: "total" },
   ]);
 
   const totalPendingRecipes = pendingRecipeCount[0]?.total || 0;
+  const totalPages = Math.ceil(totalPendingRecipes / limit);
+  const hasNextPage = page < totalPages;
 
   // Fetch recipes data
   const pendingRecipesData = await this.aggregate([
     ...recipeAggregationPipeline(filter, {
       "moderationInfo.status": "pending",
     }),
-
     { $sort: { ...sortOrder } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
   ]);
 
-  return { pendingRecipesData, totalPendingRecipes, page, limit };
+  return {
+    pendingRecipesData,
+    totalPendingRecipes,
+    pagination: {
+      page,
+      limit,
+      totalPages,
+      hasNextPage,
+    },
+  };
 };
 
-// Get Recipe by ID - For Viewing in Recipe Viewing Page
-RecipeSchema.statics.getRecipeById = async function (req) {
+// Get Approved Recipe by ID - For Viewing in Recipe Viewing Page
+RecipeSchema.statics.getApprovedRecipeById = async function (req) {
   const { recipeId } = req.params;
   const userInteractedId = req.user?.userId;
 
   validateObjectId(recipeId, "Recipe");
-
-  console.log("RecipeId:", recipeId);
 
   const recipe = await this.aggregate([
     ...recipeAggregationPipeline(
@@ -502,6 +566,8 @@ RecipeSchema.statics.getRecipeById = async function (req) {
       [{ $limit: 1 }]
     ),
   ]).then((res) => res[0] || null);
+
+  console.log("Recipe:", recipe);
 
   if (!recipe) throw new CustomError("Recipe not found", 404);
 
@@ -531,9 +597,9 @@ RecipeSchema.statics.getRecipeById = async function (req) {
 };
 
 // Feature Recipe
-// ? How about unfeaturing a recipe, address this soon when implemented on front end
-// ? Can I do this as a toggle instead soon
-RecipeSchema.statics.toggleFeatureRecipe = async function (recipeId) {
+RecipeSchema.statics.toggleFeatureRecipe = async function (req) {
+  const recipeId = req.params.recipeId;
+
   validateObjectId(recipeId, "Recipe");
 
   const recipe = await this.findOne({ _id: recipeId }).populate(
@@ -648,6 +714,27 @@ RecipeSchema.statics.getTopEngagedRecipes = async function () {
   ]);
 
   return topEngagedRecipes;
+};
+
+// Get Recipe Without Moderation Constraints -> For Edit Recipe
+RecipeSchema.statics.getRecipeById = async function (req) {
+  const { recipeId } = req.params;
+  const { userId } = req.user;
+  const userInteractedId = userId;
+
+  validateObjectId(recipeId, "Recipe");
+
+  const recipe = await this.findById(recipeId).populate("byUser").lean();
+
+  if (!recipe) throw new CustomError("Recipe not found", 404);
+  if (recipe.deletedAt) throw new CustomError("Recipe deleted", 400);
+
+  const isAuthorizedUser =
+    recipe.byUser.toString() === userInteractedId.toString();
+
+  if (isAuthorizedUser) throw new CustomError("Unauthorized Access", 401);
+
+  return recipe;
 };
 
 const Recipe = model("Recipe", RecipeSchema);

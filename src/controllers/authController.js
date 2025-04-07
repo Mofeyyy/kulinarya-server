@@ -76,13 +76,14 @@ export const userLogout = expressAsyncHandler(async (_, res) => {
 });
 
 export const getAuthUserDetails = expressAsyncHandler(async (req, res) => {
-  const user = await User.getAuthUserDetails(req);
+  const result = await User.getAuthUserDetails(req);
 
   res.status(200).json({
     success: true,
     statusCode: 200,
     message: "User auth details fetched successfully",
-    user,
+    user: result.user,
+    canPostRecipe: result.canPostRecipe,
   });
 });
 

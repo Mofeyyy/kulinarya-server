@@ -20,6 +20,7 @@ import {
 // Imported Models
 import ResendAttempt from "./resendAttemptModel.js";
 import Recipe from "./recipeModel.js";
+import Moderation from "./moderationModel.js";
 import ResetToken from "./resetTokenModel.js";
 
 // TODO: Add Object Id Validations
@@ -213,6 +214,7 @@ userSchema.statics.login = async function (email, password) {
 };
 
 // Getting Auth User Details Static Method
+// In User Model
 userSchema.statics.getAuthUserDetails = async function (req) {
   const userId = req.user.userId;
 
@@ -224,7 +226,14 @@ userSchema.statics.getAuthUserDetails = async function (req) {
 
   if (!user) throw new CustomError("User not found", 404);
 
-  return user;
+  // -------------- FOR COUNTING PENDING RECIPE ----------------------
+  const pendingModerationsCount =
+    await Moderation.countPendingModerationsForUser(userId);
+
+  // Set hasPendingRecipes to true if the user has 3 or fewer pending recipes, false if more than 3
+  const canPostRecipe = pendingModerationsCount < 1;
+
+  return { user, canPostRecipe };
 };
 
 // Static method for sending a password reset email

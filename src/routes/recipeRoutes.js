@@ -5,12 +5,13 @@ import {
   postNewRecipe,
   updateRecipe,
   getAllApprovedRecipes,
-  getRecipeById,
+  getApprovedRecipeById,
   getFeaturedRecipes,
   getPendingRecipes,
   toggleFeatureRecipe,
   softDeleteRecipe,
   getTopEngagedRecipes,
+  getRecipeById,
 } from "../controllers/recipeController.js";
 
 // Imported Middlewares
@@ -33,6 +34,12 @@ router.post(
 );
 
 router.patch(
+  "/:recipeId/toggle-feature",
+  authenticateUser,
+  checkRole(["admin", "creator"]),
+  toggleFeatureRecipe
+);
+router.patch(
   "/:recipeId",
   authenticateUser,
   fileUpload.fields([
@@ -42,26 +49,26 @@ router.patch(
   ]),
   updateRecipe
 );
+
 router.delete("/:recipeId/soft-delete", authenticateUser, softDeleteRecipe);
 
-// Recipe Moderation (Protected - Only Admin & Content Creators)
+// GET ROUTES
+// Protected - Admin and Creator
 router.get(
   "/pending",
   authenticateUser,
   checkRole(["admin", "creator"]),
   getPendingRecipes
 );
-router.patch(
-  "/:recipeId/toggle-feature",
-  authenticateUser,
-  checkRole(["admin", "creator"]),
-  toggleFeatureRecipe
-);
-
-// Public Routes (Viewing Recipes)
+// Public
 router.get("/approved", getAllApprovedRecipes);
 router.get("/featured", getFeaturedRecipes);
 router.get("/top-engaged", getTopEngagedRecipes);
-router.get("/:recipeId", authenticateUser.optional, getRecipeById);
+router.get(
+  "/approved/:recipeId",
+  authenticateUser.optional,
+  getApprovedRecipeById
+);
+router.get("/edit/:recipeId", authenticateUser, getRecipeById);
 
 export default router;

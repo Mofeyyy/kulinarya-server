@@ -27,7 +27,7 @@ const NotificationSchema = new Schema(
     byUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
 
     fromPost: {
@@ -74,20 +74,19 @@ NotificationSchema.statics.getUserNotifications = async function (req) {
   };
 
   if (cursor) {
-    filter.createdAt = { $lt: new Date(cursor) };
+    filter.updatedAt = { $lt: new Date(cursor) };
   }
 
-  // Fetch paginated notifications
+  // Use updatedAt consistently for sorting and cursoring
   const notifications = await this.find(filter)
     .populate("byUser", "firstName lastName profilePictureUrl")
-    .sort({ createdAt: -1 })
+    .sort({ updatedAt: -1 })
     .limit(Number(limit))
     .lean();
 
-  // Set new cursor for pagination
   const newCursor =
     notifications.length > 0
-      ? notifications[notifications.length - 1].createdAt
+      ? notifications[notifications.length - 1].updatedAt
       : null;
 
   return { notifications, cursor: newCursor };
@@ -258,7 +257,6 @@ NotificationSchema.statics.handleModerationNotification = async function ({
 
   const existingNotification = await this.findOne({
     forUser: recipeOwnerId,
-    byUser: userInteractedId,
     fromPost: recipeId,
     type: "moderation",
   });
