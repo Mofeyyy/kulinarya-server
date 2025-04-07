@@ -193,7 +193,7 @@ RecipeSchema.statics.createRecipe = async function (req) {
       recipeMediaUrls.mainPictureUrl = await handleSupabaseUpload({
         file: req.files.mainPicture[0],
         folder: "recipe_pictures",
-        allowedTypes: ["jpeg", "png", "webp"],
+        allowedTypes: ["jpeg", "png", "webp", "jpg"],
         maxFileSize: 2 * 1024 * 1024, // 2mb
       });
     }
@@ -215,7 +215,7 @@ RecipeSchema.statics.createRecipe = async function (req) {
           handleSupabaseUpload({
             file,
             folder: "recipe_pictures",
-            allowedTypes: ["jpeg", "png", "webp"],
+            allowedTypes: ["jpeg", "png", "webp", "jpg"],
 
             maxFileSize: 2 * 1024 * 1024, // 2mb
           })
@@ -293,7 +293,7 @@ RecipeSchema.statics.updateRecipe = async function (req) {
       updates.mainPictureUrl = await handleSupabaseUpload({
         file: req.files.mainPicture[0],
         folder: "recipe_pictures",
-        allowedTypes: ["jpeg", "png", "webp"],
+        allowedTypes: ["jpeg", "png", "webp", "jpg"],
         maxFileSize: 2 * 1024 * 1024, // 2MB
       });
     }
@@ -347,7 +347,7 @@ RecipeSchema.statics.updateRecipe = async function (req) {
             handleSupabaseUpload({
               file,
               folder: "recipe_pictures",
-              allowedTypes: ["jpeg", "png", "webp"],
+              allowedTypes: ["jpeg", "png", "webp", "jpg"],
               maxFileSize: 2 * 1024 * 1024, // 2MB
             })
           )
