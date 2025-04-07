@@ -195,23 +195,18 @@ userSchema.statics.resendVerificationEmail = async function (email) {
 
 // User Login Static Method
 userSchema.statics.login = async function (email, password) {
-  // Validate user data
-  loginUserSchema.parse({
-    email,
-    password,
-  });
+  loginUserSchema.parse({ email, password });
 
   const user = await this.findOne({ email });
 
   if (!user) throw new CustomError("Email is not registered", 404);
 
-  // TODO: Add bcrypt catch error here
   const isPasswordMatch = await bcrypt.compare(password, user.password);
-
   if (!isPasswordMatch) throw new CustomError("Wrong Password!", 400);
 
-  return user;
+  return user; // ✅ This is correct
 };
+
 
 // Getting Auth User Details Static Method
 // In User Model
