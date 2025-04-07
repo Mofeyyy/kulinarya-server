@@ -229,7 +229,7 @@ userSchema.statics.getAuthUserDetails = async function (req) {
     await Moderation.countPendingModerationsForUser(userId);
 
   // Set hasPendingRecipes to true if the user has 3 or fewer pending recipes, false if more than 3
-  const canPostRecipe = pendingModerationsCount < 1;
+  const canPostRecipe = pendingModerationsCount < 3;
 
   return { user, canPostRecipe };
 };

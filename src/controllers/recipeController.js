@@ -15,7 +15,6 @@ export const postNewRecipe = expressAsyncHandler(async (req, res) => {
 });
 
 export const updateRecipe = expressAsyncHandler(async (req, res) => {
-  console.log("HOOOOYYY!");
   const result = await Recipe.updateRecipe(req);
 
   res.status(200).json({

@@ -22,12 +22,9 @@ const userBaseSchema = z.object({
     )
     .trim(),
 
-  firstName: z
-    .string()
-    .trim()
-    .min(2, "First name must be at least 2 characters"),
+  firstName: z.string().trim().min(2, "First name is required"),
 
-  lastName: z.string().trim().min(2, "Last name must be at least 2 characters"),
+  lastName: z.string().trim().min(2, "Last name is required"),
 });
 
 // User Registration

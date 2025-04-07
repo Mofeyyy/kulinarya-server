@@ -4,13 +4,13 @@ import expressAsyncHandler from "express-async-handler";
 import User from "../models/userModel.js";
 
 export const getSpecificUserData = expressAsyncHandler(async (req, res) => {
-  const userData = await User.getSpecificUserData(req);
+  const user = await User.getSpecificUserData(req);
 
   res.status(200).json({
     success: true,
     statusCode: 200,
     message: "User Data Fetched Succesfully",
-    userData,
+    user,
   });
 });
 

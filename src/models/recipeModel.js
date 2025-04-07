@@ -439,6 +439,16 @@ RecipeSchema.statics.softDeleteRecipe = async function (recipeId, userId) {
 RecipeSchema.statics.getApprovedRecipes = async function (query) {
   const { page, limit, filter, sortOrder } = this.extractQueryParams(query);
 
+  if (query.userId) validateObjectId(query.userId, "User");
+
+  // Custom Other Filter -> User Recipe Viewing
+  const customOtherFilter = query.userId
+    ? {
+        "moderationInfo.status": "approved",
+        "byUser._id": new mongoose.Types.ObjectId(query.userId),
+      }
+    : { "moderationInfo.status": "approved" };
+
   // For Custom Sorting -> Feature Admin Page
   const customSort = query.forFeaturedRecipes
     ? { isFeatured: -1, ...sortOrder }
@@ -448,9 +458,7 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
 
   //Count Approved Recipes
   const approvedRecipeCount = await this.aggregate([
-    ...recipeAggregationPipeline(filter, {
-      "moderationInfo.status": "approved",
-    }),
+    ...recipeAggregationPipeline(filter, customOtherFilter),
     { $count: "total" },
   ]);
 
@@ -460,15 +468,11 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
 
   // Fetch with pagination
   const approvedRecipesData = await this.aggregate([
-    ...recipeAggregationPipeline(
-      filter,
-      { "moderationInfo.status": "approved" },
-      [
-        ...commentCountPipeline,
-        ...reactionCountPipeline,
-        ...postViewCountPipeline,
-      ]
-    ),
+    ...recipeAggregationPipeline(filter, customOtherFilter, [
+      ...commentCountPipeline,
+      ...reactionCountPipeline,
+      ...postViewCountPipeline,
+    ]),
     {
       $project: {
         title: 1,
@@ -696,6 +700,8 @@ RecipeSchema.statics.getTopEngagedRecipes = async function () {
           firstName: { $arrayElemAt: ["$userDetails.firstName", 0] },
           lastName: { $arrayElemAt: ["$userDetails.lastName", 0] },
         },
+        createdAt: 1,
+        updatedAt: 1,
         totalReactions: { $size: "$reactions" },
         totalComments: { $size: "$comments" },
         totalViews: { $size: "$postViews" },

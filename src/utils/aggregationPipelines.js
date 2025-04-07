@@ -2,7 +2,7 @@
 export const recipeAggregationPipeline = (
   filter = {},
   otherFilters = {},
-  otherAggregationsPiplines = [],
+  otherAggregationsPipelines = [],
   otherStages = []
 ) => [
   {
@@ -41,7 +41,7 @@ export const recipeAggregationPipeline = (
 
   { $unwind: { path: "$moderationInfo", preserveNullAndEmptyArrays: true } },
 
-  ...otherAggregationsPiplines,
+  ...otherAggregationsPipelines,
 
   {
     $match: {
