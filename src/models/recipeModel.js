@@ -130,7 +130,7 @@ RecipeSchema.statics.extractQueryParams = function (query) {
     ? 10
     : Math.min(Math.max(1, Number(query.limit)), 100);
   const sortOrder =
-    query.sortOrder === "newest" ? { createdAt: -1 } : { createdAt: 1 };
+    query.sortOrder === "newest" ? { updatedAt: -1 } : { updatedAt: 1 };
 
   const filter = {};
   const searchConditions = [];
@@ -479,6 +479,7 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
         mainPictureUrl: 1,
         isFeatured: 1,
         createdAt: 1,
+        updatedAt: 1,
         totalComments: 1,
         totalReactions: 1,
         totalViews: 1,
@@ -598,11 +599,6 @@ RecipeSchema.statics.getApprovedRecipeById = async function (req) {
 // Feature Recipe
 RecipeSchema.statics.toggleFeatureRecipe = async function (req) {
   const recipeId = req.params.recipeId;
-
-  console.log("IIIITTOOOOO RecipeId:", recipeId);
-  console.log(
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-  );
 
   validateObjectId(recipeId, "Recipe");
 

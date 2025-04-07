@@ -164,5 +164,41 @@ ModerationSchema.statics = {
   },
 };
 
+// For Counting User Pending Recipes
+ModerationSchema.statics.countPendingModerationsForUser = async function (
+  userId
+) {
+  const result = await this.aggregate([
+    {
+      $lookup: {
+        from: "recipes",
+        localField: "forPost",
+        foreignField: "_id",
+        as: "recipes",
+      },
+    },
+    {
+      $unwind: {
+        path: "$recipes",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "recipes.byUser": new mongoose.Types.ObjectId(userId),
+        status: "pending",
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return result.length > 0 ? result[0].count : 0;
+};
+
 const Moderation = model("Moderation", ModerationSchema);
 export default Moderation;
