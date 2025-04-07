@@ -103,6 +103,7 @@ export const forgotPassword = expressAsyncHandler(async (req, res) => {
   });
 });
 
+
 export const resetPassword = expressAsyncHandler(async (req, res) => {
   const { token } = req.query;
   const { newPassword } = req.body;
@@ -115,3 +116,15 @@ export const resetPassword = expressAsyncHandler(async (req, res) => {
     message: "Password has been reset successfully",
   });
 });
+
+export const verifyResetToken = expressAsyncHandler(async (req, res) => {
+  const { token } = req.body;
+  try {
+    const decoded = await User.verifyResetToken(token);
+    res.status(200).json({ success: true, message: 'Valid token' });
+  } catch (err) {
+    console.error(err.message);  // This should give more context
+    res.status(400).json({ success: false, message: err.message || "Something went wrong" });
+  }
+});
+
