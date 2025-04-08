@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 
-
 // Imported Utility Functions
 import { verifyToken } from "../utils/tokenUtils.js";
 import CustomError from "../utils/customError.js";
@@ -207,7 +206,6 @@ userSchema.statics.login = async function (email, password) {
   return user; // ✅ This is correct
 };
 
-
 // Getting Auth User Details Static Method
 // In User Model
 userSchema.statics.getAuthUserDetails = async function (req) {
@@ -236,7 +234,8 @@ userSchema.statics.sendPasswordResetEmail = async function (email) {
   const user = await this.findOne({ email });
   if (!user) throw new CustomError("User not found", 404);
 
-  const { allowed, attempts, message } = await ResendAttempt.handleResendAttempt(user.email, "passwordReset");
+  const { allowed, attempts, message } =
+    await ResendAttempt.handleResendAttempt(user.email, "passwordReset");
   if (!allowed) throw new CustomError(message, 400);
 
   // Generate new token
@@ -272,8 +271,6 @@ userSchema.statics.verifyResetToken = async function (token) {
   }
 };
 
-
-
 userSchema.statics.passwordReset = async function (token, newPassword) {
   const decoded = await this.verifyResetToken(token);
 
@@ -289,7 +286,6 @@ userSchema.statics.passwordReset = async function (token, newPassword) {
 
   return user;
 };
-
 
 // Static method for fetching specific user data
 userSchema.statics.getSpecificUserData = async function (req) {

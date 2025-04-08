@@ -25,7 +25,7 @@ router.get("/:userId", authenticateUser, getSpecificUserData);
 router.patch(
   "/:userId/update",
   authenticateUser,
-  fileUpload.single("profilePicture"),
+  fileUpload.single("profilePictureUrl"),
   updateUserData
 );
 router.delete("/:userId/soft-delete", authenticateUser, softDeleteUserAccount);
