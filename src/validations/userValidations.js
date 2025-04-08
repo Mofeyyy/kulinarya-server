@@ -90,5 +90,5 @@ export const resetPasswordSchema = z
   .object({
     newPassword: userBaseSchema.shape.password,
 
-  })
+});
   
