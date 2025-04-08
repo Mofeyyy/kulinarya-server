@@ -68,7 +68,7 @@ export const userLogin = expressAsyncHandler(async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
-        isEmailVerified: user.isEmailVerified, // ✅ This is correct
+        isEmailVerified: user.isEmailVerified, 
       },
     },
   });
