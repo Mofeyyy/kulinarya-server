@@ -449,9 +449,11 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
       }
     : { "moderationInfo.status": "approved" };
 
-  // For Custom Sorting -> Feature Admin Page
+  // For Custom Sorting -> Feature Admin Page and Ranking
   const customSort = query.forFeaturedRecipes
     ? { isFeatured: -1, ...sortOrder }
+    : query.forRankingRecipes
+    ? { totalEngagement: -1, ...sortOrder }
     : { ...sortOrder };
 
   console.log(`Page: ${page}, Limit: ${limit}`); // Debugging log
@@ -484,19 +486,34 @@ RecipeSchema.statics.getApprovedRecipes = async function (query) {
         isFeatured: 1,
         createdAt: 1,
         updatedAt: 1,
+
         totalComments: 1,
         totalReactions: 1,
+        heartCount: 1,
+        droolCount: 1,
+        neutralCount: 1,
         totalViews: 1,
+
         totalEngagement: {
           $add: ["$totalComments", "$totalReactions", "$totalViews"],
         },
       },
     },
-
     { $sort: customSort },
     { $skip: (page - 1) * limit },
     { $limit: limit },
   ]);
+
+  return {
+    totalApprovedRecipes,
+    recipes: approvedRecipesData,
+    pagination: {
+      page,
+      limit,
+      totalPages,
+      hasNextPage,
+    },
+  };
 
   return {
     totalApprovedRecipes,

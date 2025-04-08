@@ -118,23 +118,93 @@ export const reactionCountPipeline = [
         {
           $match: {
             $expr: { $eq: ["$fromPost", "$$recipeId"] },
-            reaction: { $ne: null },
+            reaction: { $in: ["heart", "drool", "neutral"] },
+            deletedAt: null,
           },
         },
-        { $count: "total" },
+        {
+          $group: {
+            _id: "$reaction",
+            count: { $sum: 1 },
+          },
+        },
       ],
       as: "reactionData",
     },
   },
   {
     $set: {
-      totalReactions: {
-        $ifNull: [{ $arrayElemAt: ["$reactionData.total", 0] }, 0],
-      }, // Extract count, fallback to 0
+      heartCount: {
+        $ifNull: [
+          {
+            $first: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$reactionData",
+                    as: "item",
+                    cond: { $eq: ["$$item._id", "heart"] },
+                  },
+                },
+                as: "heart",
+                in: "$$heart.count",
+              },
+            },
+          },
+          0,
+        ],
+      },
+      droolCount: {
+        $ifNull: [
+          {
+            $first: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$reactionData",
+                    as: "item",
+                    cond: { $eq: ["$$item._id", "drool"] },
+                  },
+                },
+                as: "drool",
+                in: "$$drool.count",
+              },
+            },
+          },
+          0,
+        ],
+      },
+      neutralCount: {
+        $ifNull: [
+          {
+            $first: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$reactionData",
+                    as: "item",
+                    cond: { $eq: ["$$item._id", "neutral"] },
+                  },
+                },
+                as: "neutral",
+                in: "$$neutral.count",
+              },
+            },
+          },
+          0,
+        ],
+      },
     },
   },
   {
-    $unset: "reactionData", // Remove the temporary array
+    $set: {
+      totalReactions: {
+        $add: ["$heartCount", "$droolCount", "$neutralCount"],
+      },
+    },
+  },
+  {
+    $unset: "reactionData",
   },
 ];
 
