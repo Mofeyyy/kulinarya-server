@@ -60,9 +60,18 @@ export const userLogin = expressAsyncHandler(async (req, res) => {
   // Generate auth token and store in cookie
   user.generateAuthToken(res);
 
-  res
-    .status(200)
-    .json({ success: true, statusCode: 200, message: "Login Success" });
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Login Success",
+    data: {
+      user: {
+        _id: user._id,
+        email: user.email,
+        isEmailVerified: user.isEmailVerified, 
+      },
+    },
+  });
 });
 
 export const userLogout = expressAsyncHandler(async (_, res) => {
