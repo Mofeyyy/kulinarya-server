@@ -62,3 +62,13 @@ export const getTopSharers = expressAsyncHandler(async (req, res) => {
     topSharers,
   });
 });
+
+export const userChangePassword = expressAsyncHandler(async (req, res) => {
+  await User.userChangePassword(req);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: "Password Changed Successfully",
+  });
+});

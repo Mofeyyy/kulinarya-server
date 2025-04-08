@@ -14,6 +14,7 @@ import {
   registerUserSchema,
   loginUserSchema,
   updateUserSchema,
+  changePasswordSchema,
 } from "../validations/userValidations.js";
 
 // Imported Models
@@ -542,6 +543,32 @@ userSchema.statics.getAllUsers = async function () {
     .lean();
 
   return users;
+};
+
+userSchema.statics.userChangePassword = async function (req) {
+  const userInteractedId = req.user.userId;
+  const { userId } = req.params;
+  const { currentPassword, newPassword } = req.body;
+
+  validateObjectId(userId, "User");
+  validateObjectId(userInteractedId, "User");
+
+  if (userId !== userInteractedId) throw new CustomError("Unauthorized", 401);
+
+  // Validate the request body using the changePasswordSchema
+  changePasswordSchema.parse({ currentPassword, newPassword });
+
+  // Find the user in the database
+  const user = await User.findById(userId);
+  if (!user) throw new CustomError("User not found", 404);
+
+  // Check if the current password matches
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) throw new CustomError("Current password is incorrect", 401);
+
+  // Update the password in the database
+  user.password = newPassword;
+  await user.save();
 };
 
 const User = model("User", userSchema);

@@ -9,6 +9,7 @@ import {
   softDeleteUserAccount,
   getTopSharers,
   getAllUsers,
+  userChangePassword,
 } from "../controllers/userController.js";
 
 // Imported Middlewares
@@ -32,5 +33,7 @@ router.delete("/:userId/soft-delete", authenticateUser, softDeleteUserAccount);
 
 // Fetch Recipes From a Specific User
 router.get("/:userId/recipes", authenticateUser, getUserRecipes);
+
+router.patch("/:userId/change-password", authenticateUser, userChangePassword);
 
 export default router;
