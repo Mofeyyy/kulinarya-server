@@ -199,9 +199,9 @@ RecipeSchema.statics.createRecipe = async function (req) {
     }
 
     // Recipe Highlight Video
-    if (req.files.highlightVideo) {
+    if (req.files.video) {
       recipeMediaUrls.videoUrl = await handleSupabaseUpload({
-        file: req.files.highlightVideo[0],
+        file: req.files.video[0],
         folder: "recipe_videos",
         allowedTypes: ["mp4", "mov"],
         maxFileSize: 50 * 1024 * 1024, // 50mb
